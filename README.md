@@ -235,10 +235,3 @@ Per-layer documentation lives in [`docs/`](docs/):
 
 UML diagrams (PlantUML sources): [`Derivables/uml/`](Derivables/uml/)
 
----
-
-## Course material reference
-
-- Gian Enrico Conti — *Towards Remote View*: <https://github.com/ingconti/TowardsRemoteView>
-- *MinimalTCPServerAndClient*: <https://github.com/ingconti/MinimalTCPServerAndClient>
-- *JAVAPropertyListeners*: <https://github.com/ingconti/JAVAPropertyListeners>
