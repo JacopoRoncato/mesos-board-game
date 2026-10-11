@@ -1,0 +1,116 @@
+@startuml 06-rmi-diagram
+' RMI diagram: server-side implemented, client-side also implemented.
+' Updated after:
+'   fcec8e7 — RemoteGameService.login() no longer takes numPlayers, returns String;
+'             setNumPlayers(int) added; RmiTransport.connect() takes Supplier<Integer>
+'   803cd15 — RmiTransport.send() catches RemoteException → forwards ErrMessage to client
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam interface {
+    BackgroundColor #E8F5E9
+    BorderColor #338833
+}
+skinparam note {
+    BackgroundColor #FFE0E0
+    BorderColor #CC4444
+}
+
+title MESOS — RMI: current state (server + client implemented)
+
+package "SERVER SIDE" {
+
+    package "mesos.server" {
+        interface RemoteGameService <<Remote>> {
+            + login(nick, callback) : String throws RemoteException
+            + setNumPlayers(int n) throws RemoteException
+            + sendMessage(ClientMessage, nick) throws RemoteException
+        }
+
+        class RemoteGameServiceImpl <<UnicastRemoteObject>> {
+            - queue : BlockingQueue<ClientMessage>
+            - registry : ServerRegistry
+            + login(nick, callback) : String
+            + setNumPlayers(int n)
+            + sendMessage(ClientMessage, nick)
+        }
+
+        class RmiVirtualView {
+            - callback : RemoteGameCallback
+            - nick : String
+            + sendMessage(ServerMessage)
+            + getNick() : String
+        }
+
+        class ServerRegistry {
+            + tryRegister(nick, view) : boolean
+            + unregister(nick)
+            + setExpectedPlayers(int)
+            + handleDisconnection(nick)
+            + broadcast(ServerMessage)
+        }
+        class ControllerWorker {
+            + run()
+        }
+        class "BlockingQueue" as BQ
+    }
+}
+
+package "CLIENT SIDE" {
+
+    package "mesos.client" {
+        interface RemoteGameCallback <<Remote>> {
+            + onServerMessage(ServerMessage) throws RemoteException
+        }
+
+        class RmiTransport <<UnicastRemoteObject>> {
+            + connect(host, port, nick, Supplier<Integer> askNumPlayers)
+            + send(ClientMessage)
+            + onServerMessage(ServerMessage)
+            + close()
+        }
+    }
+}
+
+' Server-side relationships
+RemoteGameServiceImpl ..|> RemoteGameService
+RemoteGameServiceImpl --> BQ : queue.put(msg)
+RemoteGameServiceImpl --> ServerRegistry : tryRegister()\nsetExpectedPlayers()\nget(nick)
+
+RmiVirtualView ..|> VirtualView
+RmiVirtualView --> RemoteGameCallback : callback\n.onServerMessage()
+
+ServerRegistry --> RmiVirtualView : broadcast → sendMessage()
+ControllerWorker --> BQ : take()
+
+' RMI flow
+RemoteGameService <-- RmiTransport : lookup +\nlogin() / setNumPlayers()\n/ sendMessage()
+RemoteGameCallback <|.. RmiTransport
+RmiTransport <-- RmiVirtualView : onServerMessage()
+
+note bottom of RmiTransport
+    Two-step lobby handshake:
+    connect() calls login(nick, this).
+    If return value == "LOBBY_FIRST":
+      calls setNumPlayers(askNumPlayers.get()).
+    "LOBBY_JOINED": no further action.
+
+    send() catches RemoteException and
+    forwards ErrMessage("PLAYER_DISCONNECTED")
+    to itself → TuiClient exits via System.exit(0).
+end note
+
+note right of RemoteGameServiceImpl
+    login() returns "LOBBY_FIRST" or "LOBBY_JOINED n/m".
+    Throws RemoteException on NICKNAME_TAKEN.
+    setNumPlayers() validates [2,5]; throws on bad value.
+    sendMessage() is the TCP game loop equivalent:
+    injects sender and enqueues the message.
+end note
+
+@enduml

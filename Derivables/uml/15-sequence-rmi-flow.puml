@@ -1,0 +1,109 @@
+@startuml 15-sequence-rmi-flow
+' Sequence diagram: full RMI flow.
+' Updated after commit fcec8e7:
+'   - login() no longer takes numPlayers; returns String ("LOBBY_FIRST" or "LOBBY_JOINED n/m")
+'   - setNumPlayers() called separately by the first client after LOBBY_FIRST
+'   - RmiTransport.connect() invokes Supplier<Integer> only on LOBBY_FIRST
+
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam sequenceParticipant {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam note {
+    BackgroundColor #FFF3CD
+}
+
+title MESOS — Full RMI Flow (login → command → snapshot push)
+
+participant "TuiClient" as TUI
+participant "RmiTransport\n(UnicastRemoteObject)" as RT
+participant "RMI Registry\n(port 1099)" as REG
+participant "RemoteGameService\nstub" as STUB
+participant "RemoteGameServiceImpl\n(server)" as RGSI
+participant "ServerRegistry" as SR
+participant "BlockingQueue" as BQ
+participant "ControllerWorker" as CW
+participant "Controller\n+ Game" as CTRL
+participant "RmiVirtualView" as RVVV
+
+== Phase 1 — Lookup and two-step login ==
+
+TUI -> RT : new RmiTransport()\n[exported as UnicastRemoteObject]
+note right of RT
+    super() in constructor
+    exports the object:
+    the server can now call
+    onServerMessage() remotely.
+end note
+
+TUI -> RT : connect(host, 1099, "bob", askNumPlayers)
+RT -> REG : LocateRegistry\n.getRegistry(host, 1099)
+REG --> RT : registry stub
+RT -> REG : lookup("mesos-game")
+REG --> RT : RemoteGameService stub
+
+RT -> STUB : login("bob", this)
+note right of RT
+    numPlayers is NOT sent here.
+    "this" = RmiTransport itself,
+    already exported as a
+    RemoteGameCallback stub.
+end note
+
+STUB -> RGSI : login("bob", callbackStub)
+RGSI -> RGSI : new RmiVirtualView(callbackStub, "bob", registry)
+RGSI -> SR : tryRegister("bob", rmiView) → true
+RGSI -> SR : getExpectedPlayers() → -1
+RGSI --> RT : "LOBBY_FIRST"
+
+note right of RT
+    First client: must provide player count.
+    askNumPlayers Supplier is invoked now —
+    it blocks until the user enters a valid number.
+end note
+
+RT -> STUB : setNumPlayers(2)
+STUB -> RGSI : setNumPlayers(2)
+RGSI -> SR : setExpectedPlayers(2)
+
+' Second client would receive "LOBBY_JOINED 2/2" and skip setNumPlayers
+
+== Phase 2 — Sending a command ==
+
+TUI -> RT : send(CommandMessage("PLACE bob B"))
+RT -> STUB : sendMessage(CommandMessage, "bob")
+STUB -> RGSI : sendMessage(CommandMessage, "bob")
+RGSI -> SR : get("bob") → rmiView
+RGSI -> RGSI : msg.setSender(rmiView)
+RGSI -> BQ : queue.put(msg)
+
+BQ -> CW : take() — CommandMessage
+CW -> CW : msg.setRegistry(registry)
+CW -> CTRL : msg.process(controller)
+CTRL -> CTRL : Game.placeTotem(...)\n→ PropertyChangeEvent
+
+== Phase 3 — Snapshot push to client ==
+
+CTRL -> SR : broadcast(\n  SnapshotMessage.from(game))
+SR -> RVVV : sendMessage(snapshot)
+RVVV -> RT : callback\n.onServerMessage(snapshot)
+note right of RVVV
+    Remote RMI call
+    on the server's RMI thread.
+    On RemoteException:
+    handleDisconnection("bob").
+end note
+RT -> RT : onMessage.accept(snapshot)
+RT -> TUI : [listener callback]
+TUI -> TUI : BoardRenderer\n.render(snapshot)
+
+note over RT, RGSI
+    Key difference vs TCP:
+    - TCP: server writes to ObjectOutputStream (passive push)
+    - RMI: server calls onServerMessage() as a remote method (active push)
+    ControllerWorker processes both transports identically.
+end note
+
+@enduml

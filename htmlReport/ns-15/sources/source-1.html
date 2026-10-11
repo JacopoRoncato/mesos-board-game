@@ -1,0 +1,290 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Player</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.player</a>
+</div>
+
+<h1>Coverage Summary for Class: Player (mesos.player)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Player</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    94,1%
+  </span>
+  <span class="absValue">
+    (16/17)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    92,9%
+  </span>
+  <span class="absValue">
+    (13/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    94,9%
+  </span>
+  <span class="absValue">
+    (37/39)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.player;
+&nbsp;
+&nbsp;import java.beans.PropertyChangeEvent;
+&nbsp;import java.beans.PropertyChangeListener;
+&nbsp;import java.io.Serializable;
+&nbsp;import mesos.cards.BuildingCard;
+&nbsp;import mesos.cards.characters.CharacterCard;
+&nbsp;import mesos.offer.OfferTile;
+&nbsp;import mesos.tribe.Tribe;
+&nbsp;
+&nbsp;/**
+&nbsp; * Represents one player: holds food, prestige points, their totem,
+&nbsp; * their tribe, and the offer tile they have selected this round.
+&nbsp; */
+&nbsp;public class Player implements Serializable {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private final String id;
+&nbsp;    private int food;
+&nbsp;    private int prestigePoints;
+&nbsp;    private final Totem totem;
+&nbsp;    private final Tribe tribe;
+&nbsp;    private OfferTile selectedOfferTile;
+&nbsp;    private transient PropertyChangeListener listener;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a player with the given identifier and totem.
+&nbsp;     *
+&nbsp;     * @param id    the unique player identifier (nickname)
+&nbsp;     * @param totem the player&#39;s totem
+&nbsp;     */
+<b class="fc">&nbsp;    public Player(String id, Totem totem) {</b>
+<b class="fc">&nbsp;        this.id = id;</b>
+<b class="fc">&nbsp;        this.totem = totem;</b>
+<b class="fc">&nbsp;        this.tribe = new Tribe();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Sets the listener that will be notified whenever this player&#39;s state changes.
+&nbsp;     *
+&nbsp;     * @param listener the listener to register; may be {@code null} to remove the current listener
+&nbsp;     */
+&nbsp;    public void setListener(PropertyChangeListener listener) {
+<b class="nc">&nbsp;        this.listener = listener;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void fire() {
+<b class="pc">&nbsp;        if (listener != null)</b>
+<b class="nc">&nbsp;            listener.propertyChange(new PropertyChangeEvent(this, &quot;update&quot;, null, null));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Deducts the given amount of food from this player.
+&nbsp;     *
+&nbsp;     * @param amount the amount to pay
+&nbsp;     * @return {@code true} if payment succeeded; {@code false} if the player had insufficient food
+&nbsp;     */
+&nbsp;    public boolean payFood(int amount) {
+<b class="fc">&nbsp;        if (amount &lt;= 0) return true;</b>
+<b class="fc">&nbsp;        if (food &lt; amount) return false;</b>
+<b class="fc">&nbsp;        food -= amount;</b>
+<b class="fc">&nbsp;        fire();</b>
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Adds the given amount of food to this player&#39;s supply.
+&nbsp;     *
+&nbsp;     * @param amount the amount to gain (ignored if zero or negative)
+&nbsp;     */
+&nbsp;    public void gainFood(int amount) {
+<b class="fc">&nbsp;        if (amount &gt; 0) {</b>
+<b class="fc">&nbsp;            food += amount;</b>
+<b class="fc">&nbsp;            fire();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the player&#39;s current food supply. */
+&nbsp;    public int getFood() {
+<b class="fc">&nbsp;        return food;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Awards the given amount of prestige to this player.
+&nbsp;     *
+&nbsp;     * @param amount the amount to add (ignored if zero or negative)
+&nbsp;     */
+&nbsp;    public void addPrestige(int amount) {
+<b class="fc">&nbsp;        if (amount &gt; 0) {</b>
+<b class="fc">&nbsp;            prestigePoints += amount;</b>
+<b class="fc">&nbsp;            fire();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Deducts the given amount of prestige from this player.
+&nbsp;     *
+&nbsp;     * @param amount the amount to remove (ignored if zero or negative)
+&nbsp;     */
+&nbsp;    public void removePrestige(int amount) {
+<b class="fc">&nbsp;        if (amount &gt; 0) {</b>
+<b class="fc">&nbsp;            prestigePoints -= amount;</b>
+<b class="fc">&nbsp;            fire();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Records the offer tile the player has selected during the placement phase.
+&nbsp;     *
+&nbsp;     * @param tile the selected tile
+&nbsp;     */
+&nbsp;    public void chooseOfferTile(OfferTile tile) {
+<b class="fc">&nbsp;        this.selectedOfferTile = tile;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Clears the player&#39;s selected offer tile after it has been executed. */
+&nbsp;    public void clearSelectedOfferTile() {
+<b class="fc">&nbsp;        this.selectedOfferTile = null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the offer tile this player has selected, or {@code null} if none. */
+&nbsp;    public OfferTile getSelectedOfferTile() {
+<b class="fc">&nbsp;        return selectedOfferTile;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Adds the given character card to the player&#39;s tribe, triggering purchase effects
+&nbsp;     * and notifying buildings.
+&nbsp;     *
+&nbsp;     * @param card the character card to acquire
+&nbsp;     */
+&nbsp;    public void acquireCharacter(CharacterCard card) {
+<b class="fc">&nbsp;        tribe.addCharacter(card);</b>
+<b class="fc">&nbsp;        card.onPurchase(this);</b>
+<b class="fc">&nbsp;        tribe.notifyBuildingsOnCharacterAdded(this, card);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Purchases a building card: deducts the food cost and adds the card to the tribe.
+&nbsp;     *
+&nbsp;     * @param card the building card to acquire
+&nbsp;     * @throws IllegalStateException if the player cannot afford the building
+&nbsp;     */
+&nbsp;    public void acquireBuilding(BuildingCard card) {
+<b class="fc">&nbsp;        int discount = tribe.calculateBuildingDiscount();</b>
+<b class="fc">&nbsp;        int realCost = card.calculateRealCost(discount);</b>
+<b class="fc">&nbsp;        if (!payFood(realCost)) {</b>
+<b class="fc">&nbsp;            throw new IllegalStateException(</b>
+<b class="fc">&nbsp;                &quot;Cannot acquire building &quot; + card.getName()</b>
+&nbsp;                        + &quot; (cost=&quot; + realCost + &quot;, food=&quot; + food + &quot;)&quot;);
+&nbsp;        }
+<b class="fc">&nbsp;        tribe.addBuilding(card);</b>
+<b class="fc">&nbsp;        card.onAcquire(this);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the player&#39;s unique identifier (nickname). */
+&nbsp;    public String getId() {
+<b class="fc">&nbsp;        return id;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the player&#39;s current prestige points. */
+&nbsp;    public int getPrestigePoints() {
+<b class="fc">&nbsp;        return prestigePoints;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the player&#39;s totem. */
+&nbsp;    public Totem getTotem() {
+<b class="fc">&nbsp;        return totem;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the player&#39;s tribe (character and building cards). */
+&nbsp;    public Tribe getTribe() {
+<b class="fc">&nbsp;        return tribe;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

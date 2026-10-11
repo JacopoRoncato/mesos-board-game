@@ -1,0 +1,19 @@
+# Compiled class files
+*.class
+
+# Maven build output
+target/
+
+# IDE files
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# File temporanei di test (output processi in background)
+auto*_out.txt
+auto*_err.txt
+server_out.txt
+server_err.txt

@@ -1,0 +1,61 @@
+@startuml 18-deployment-diagram
+
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+skinparam component {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam note {
+    BackgroundColor #FFE0E0
+    BorderColor #CC4444
+}
+skinparam shadowing false
+skinparam backgroundColor white
+
+title MESOS — Deployment Diagram
+
+node "Server Node\n«device»" as ServerNode {
+    node "JVM Server\n«executionEnvironment»" as ServerJVM {
+        component "ServerMain" as SM
+        component "ServerRegistry\n+ heartbeat thread" as SR
+        component "ControllerWorker" as CW
+        component "Controller + Game" as GameCtrl
+        component "GamePersistence\n(FA2)" as GP
+    }
+}
+
+node "MySQL DB\n«device» — optional (FA1)" as DBNode {
+    component "mesos schema\n(scores table)" as DB
+}
+
+node "Client Node 1..N\n«device»" as ClientNode {
+    node "JVM Client\n«executionEnvironment»" as ClientJVM {
+        component "TuiClient / GuiClient" as UI
+        component "TcpTransport / RmiTransport" as Trans
+        component "watchdog thread" as WD
+    }
+}
+
+ServerNode "1" -- "1..5" ClientNode : <<TCP port 1234>>\nor\n<<RMI port 1099>>
+ServerNode "1" ..> "0..1" DBNode : <<JDBC — optional>>\nsaveResults / getRanking
+
+note bottom of ServerNode
+  Receives: LoginMessage, ColorMessage, StartMessage, CommandMessage
+  Sends: OkMessage, ErrMessage, InfoMessage,
+         SnapshotMessage, HeartbeatMessage (every 2 s),
+         RankingMessage (FA1 — after GAME_OVER)
+  1 thread per TCP client + 1 ControllerWorker + 1 heartbeat
+  FA2: Game serialized to mesos-save.dat after each PLACEMENT
+end note
+
+note bottom of ClientNode
+  Max 5 clients (MESOS rules: 2-5 players)
+  Transport: TCP or RMI (selected at Launcher)
+  UI: TUI or Swing GUI (selected at Launcher)
+  Watchdog: exits if no message for 6 s (server crash detection)
+end note
+
+@enduml

@@ -1,0 +1,172 @@
+@startuml 11-card-hierarchy
+' Class diagram: card hierarchy + Strategy BuildingEffect.
+' Packages: mesos.cards, mesos.cards.characters, mesos.cards.events, mesos.effects
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam interface {
+    BackgroundColor #E8F5E9
+    BorderColor #338833
+}
+
+title MESOS — Class Diagram: card hierarchy + BuildingEffect (Strategy)
+
+package "mesos.cards" {
+    abstract class Card {
+        - name : String
+        - era : Era
+        + getName() : String
+        + getEra() : Era
+    }
+
+    abstract class TribeDeckCard {
+        - allowedPlayerCounts : Set<PlayerCount>
+        + getAllowedPlayerCounts() : Set<PlayerCount>
+    }
+
+    class BuildingCard {
+        - foodCost : int
+        - printedPrestigePoints : int
+        - effect : BuildingEffect
+        + getFoodCost() : int
+        + getPrestigePoints() : int
+        + getEffect() : BuildingEffect
+    }
+
+    class FinalEventCard {
+    }
+}
+
+package "mesos.cards.characters" {
+    abstract class CharacterCard {
+        + {abstract} onPurchase(Player)
+        + {abstract} getType() : CharacterType
+        + getBaseSustenanceDiscount() : int
+    }
+
+    class Hunter {
+        - hasImmediateFoodIcon : boolean
+        + onPurchase(Player)
+        + getType() : CharacterType
+    }
+
+    class Shaman {
+        - shamanIcons : int
+        + onPurchase(Player)
+        + getType() : CharacterType
+        + getShamanIcons() : int
+    }
+
+    class Artist {
+        + onPurchase(Player)
+        + getType() : CharacterType
+    }
+
+    class Builder {
+        - ppValue : int
+        - discountValue : int
+        + onPurchase(Player)
+        + getType() : CharacterType
+    }
+
+    class Inventor {
+        - inventionIcon : InventionIcon
+        + onPurchase(Player)
+        + getType() : CharacterType
+    }
+
+    class Gatherer {
+        - sustenanceDiscount : int = 3
+        + onPurchase(Player)
+        + getType() : CharacterType
+        + getBaseSustenanceDiscount() : int
+    }
+}
+
+package "mesos.cards.events" {
+    abstract class EventCard {
+        - eventType : EventType
+        + {abstract} resolveEvent(List<Player>)
+        + getEventType() : EventType
+    }
+
+    class SustenanceEvent {
+        + resolveEvent(List<Player>)
+    }
+
+    class HuntingEvent {
+        + resolveEvent(List<Player>)
+    }
+
+    class ShamanicRitualEvent {
+        + resolveEvent(List<Player>)
+    }
+
+    class CavePaintingsEvent {
+        + resolveEvent(List<Player>)
+    }
+}
+
+package "mesos.effects" {
+    abstract class BuildingEffect {
+        + onAcquire(Player)
+        + onCharacterAdded(Player, CharacterCard)
+        + onTurnOrderPlaced(Player, TurnOrderSpace)
+        + onEndOfActionPhase(Player, Board)
+        + getExtraSustenanceDiscount(Player) : int
+        + getAdditionalShamanIcons(Player) : int
+        + ignoresShamanicPenalty(Player) : boolean
+        + doublesShamanicReward(Player) : boolean
+        + getExtraFoodPerCharacterForEvent(...) : int
+        + getExtraPrestigePerCharacterForEvent(...) : int
+        + getEndGameBonus(Player) : int
+    }
+
+    class NoBuildingEffect
+    class SustenanceDiscountEffect
+    class TurnOrderPlacementEffect
+    class TriggeredFoodRewardEffect
+    class PerCharacterEventBonusEffect
+    class ShamanicRitualEffect
+    class ExtraTopRowPickEffect
+    class EndGameScoringEffect
+}
+
+' Card Inheritance
+Card <|-- TribeDeckCard
+Card <|-- BuildingCard
+Card <|-- FinalEventCard
+
+TribeDeckCard <|-- CharacterCard
+TribeDeckCard <|-- EventCard
+
+CharacterCard <|-- Hunter
+CharacterCard <|-- Shaman
+CharacterCard <|-- Artist
+CharacterCard <|-- Builder
+CharacterCard <|-- Inventor
+CharacterCard <|-- Gatherer
+
+EventCard <|-- SustenanceEvent
+EventCard <|-- HuntingEvent
+EventCard <|-- ShamanicRitualEvent
+EventCard <|-- CavePaintingsEvent
+
+' BuildingEffect Strategy
+BuildingEffect <|-- NoBuildingEffect
+BuildingEffect <|-- SustenanceDiscountEffect
+BuildingEffect <|-- TurnOrderPlacementEffect
+BuildingEffect <|-- TriggeredFoodRewardEffect
+BuildingEffect <|-- PerCharacterEventBonusEffect
+BuildingEffect <|-- ShamanicRitualEffect
+BuildingEffect <|-- ExtraTopRowPickEffect
+BuildingEffect <|-- EndGameScoringEffect
+
+BuildingCard --> BuildingEffect : effect\n(Strategy)
+
+@enduml

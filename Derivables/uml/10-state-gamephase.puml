@@ -1,0 +1,59 @@
+@startuml 10-state-gamephase
+' State diagram: GamePhase state machine (mesos.enums.GamePhase + mesos.game.Game).
+' Triggers correspond to Controller commands and Game methods.
+
+skinparam backgroundColor white
+skinparam state {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+    FontSize 12
+}
+skinparam ArrowColor #444444
+skinparam note {
+    BackgroundColor #FFF3CD
+    BorderColor #FF9900
+}
+
+title MESOS — State Diagram: GamePhase
+
+[*] --> SETUP : new Game()
+
+SETUP --> PLACEMENT : startGame()\n[calls setup()]
+
+PLACEMENT --> PLACEMENT : placeTotem()\n[totem placed on tile]
+
+PLACEMENT --> ACTION_RESOLUTION : actionPhase()\n[auto: all totems placed]
+
+ACTION_RESOLUTION --> END_OF_ROUND : endOfRound()\n[CMD: END_ROUND]
+
+END_OF_ROUND --> PLACEMENT : [normal round]\nround < MAX_ROUNDS\n&& !deckExhausted
+
+END_OF_ROUND --> FINAL_SCORING : [final round]\nround >= MAX_ROUNDS\n|| deckExhausted
+
+FINAL_SCORING --> GAME_OVER : endGame()\n[called from endOfRound\nfinal-round path]
+
+GAME_OVER --> [*]
+
+note right of END_OF_ROUND
+    endOfRound() forks:
+    - normal: resolve events →
+      discard → refill → next round
+    - final: all events →
+      final scoring → GAME_OVER
+end note
+
+note right of PLACEMENT
+    deckExhaustedFlag is set
+    when the deck is exhausted
+    during refill.
+    The final round starts
+    in the next turn.
+end note
+
+note bottom of ACTION_RESOLUTION
+    actionPhase() records each player's
+    selectedOfferTile
+    before resolution.
+end note
+
+@enduml

@@ -1,0 +1,483 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Game</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.game</a>
+</div>
+
+<h1>Coverage Summary for Class: Game (mesos.game)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Game</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    87,5%
+  </span>
+  <span class="absValue">
+    (28/32)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    78,8%
+  </span>
+  <span class="absValue">
+    (52/66)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    90,8%
+  </span>
+  <span class="absValue">
+    (119/131)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.game;
+&nbsp;
+&nbsp;import java.beans.PropertyChangeEvent;
+&nbsp;import java.beans.PropertyChangeListener;
+&nbsp;import java.io.Serializable;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.Collections;
+&nbsp;import java.util.Comparator;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Set;
+&nbsp;import mesos.board.Board;
+&nbsp;import mesos.board.RowRefillResult;
+&nbsp;import mesos.cards.events.EventCard;
+&nbsp;import mesos.enums.Era;
+&nbsp;import mesos.enums.GamePhase;
+&nbsp;import mesos.enums.PlayerCount;
+&nbsp;import mesos.offer.OfferTile;
+&nbsp;import mesos.player.Player;
+&nbsp;import mesos.player.Totem;
+&nbsp;
+&nbsp;/**
+&nbsp; * Top-level orchestrator: owns the Board, the players, the round counter
+&nbsp; * and the {@link GamePhase} state machine. Fires PropertyChangeEvents for
+&nbsp; * PHASE / ERA / ROUND so the (Virtual) View can mirror state remotely.
+&nbsp; */
+&nbsp;public class Game implements Serializable {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private static final int MAX_ROUNDS = 10;
+&nbsp;
+&nbsp;    private final PlayerCount playerCount;
+&nbsp;    private final List&lt;Player&gt; players;
+&nbsp;    private final Board board;
+&nbsp;
+&nbsp;    private int currentRound;
+&nbsp;    private Era currentEra;
+&nbsp;    private GamePhase phase;
+<b class="fc">&nbsp;    private boolean deckExhaustedFlag = false;</b>
+&nbsp;    private transient PropertyChangeListener listener;
+<b class="fc">&nbsp;    private final Set&lt;String&gt; finishedThisRound = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;    private int placementTurnIndex = 0;</b>
+<b class="fc">&nbsp;    private List&lt;Player&gt; executionOrder = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;    private int executionTurnIndex = 0;</b>
+<b class="fc">&nbsp;    private String extraPickPendingId = null;</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a new game for the given players.
+&nbsp;     * The phase is {@link GamePhase#SETUP}; call {@link #startGame()} to proceed.
+&nbsp;     *
+&nbsp;     * @param playerCount the number of players
+&nbsp;     * @param players     the list of players (order will be randomised during setup)
+&nbsp;     */
+<b class="fc">&nbsp;    public Game(PlayerCount playerCount, List&lt;Player&gt; players) {</b>
+<b class="fc">&nbsp;        this.playerCount = playerCount;</b>
+<b class="fc">&nbsp;        this.players = new ArrayList&lt;&gt;(players);</b>
+<b class="fc">&nbsp;        this.currentRound = 1;</b>
+<b class="fc">&nbsp;        this.currentEra = Era.I;</b>
+<b class="fc">&nbsp;        this.phase = GamePhase.SETUP;</b>
+<b class="fc">&nbsp;        this.board = new Board();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Registers the listener that receives a {@link PropertyChangeEvent} after every
+&nbsp;     * state mutation. Also propagates the listener to all players.
+&nbsp;     *
+&nbsp;     * @param listener the listener to register
+&nbsp;     */
+&nbsp;    public void setListener(PropertyChangeListener listener) {
+<b class="nc">&nbsp;        this.listener = listener;</b>
+<b class="nc">&nbsp;        for (Player p : players) {</b>
+<b class="nc">&nbsp;            p.setListener(listener);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void fire() {
+<b class="pc">&nbsp;        if (listener != null)</b>
+<b class="nc">&nbsp;            listener.propertyChange(new PropertyChangeEvent(this, &quot;update&quot;, null, null));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void setPhase(GamePhase newPhase) {
+<b class="fc">&nbsp;        GamePhase old = this.phase;</b>
+<b class="fc">&nbsp;        this.phase = newPhase;</b>
+<b class="pc">&nbsp;        if (old != newPhase) fire();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void setCurrentEra(Era newEra) {
+<b class="fc">&nbsp;        Era old = this.currentEra;</b>
+<b class="fc">&nbsp;        this.currentEra = newEra;</b>
+<b class="pc">&nbsp;        if (old != newEra) fire();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void setCurrentRound(int newRound) {
+<b class="fc">&nbsp;        int old = this.currentRound;</b>
+<b class="fc">&nbsp;        this.currentRound = newRound;</b>
+<b class="pc">&nbsp;        if (old != newRound) fire();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ---- setup ----
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Builds decks, configures the board, randomises the initial turn order,
+&nbsp;     * reveals the initial rows, and distributes initial food.
+&nbsp;     * Transitions the phase to {@link GamePhase#PLACEMENT}.
+&nbsp;     */
+&nbsp;    public void setup() {
+<b class="fc">&nbsp;        board.buildTribeDeck(playerCount);</b>
+<b class="fc">&nbsp;        board.buildBuildingDecks(playerCount);</b>
+<b class="fc">&nbsp;        board.configureOfferTrack(playerCount);</b>
+<b class="fc">&nbsp;        board.configureTurnOrderTile(playerCount);</b>
+<b class="fc">&nbsp;        initializeTurnOrder();</b>
+<b class="fc">&nbsp;        board.revealInitialRows(playerCount);</b>
+<b class="fc">&nbsp;        board.revealInitialBuildings(playerCount);</b>
+<b class="fc">&nbsp;        assignInitialFood();</b>
+<b class="fc">&nbsp;        placementTurnIndex = 0;</b>
+<b class="fc">&nbsp;        setPhase(GamePhase.PLACEMENT);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void initializeTurnOrder() {
+<b class="fc">&nbsp;        List&lt;Player&gt; shuffled = new ArrayList&lt;&gt;(players);</b>
+<b class="fc">&nbsp;        Collections.shuffle(shuffled);</b>
+<b class="fc">&nbsp;        for (Player player : shuffled) {</b>
+<b class="fc">&nbsp;            board.getTurnOrderTile().addTotem(player.getTotem(), player);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Distributes initial food to players based on their position in the turn order.
+&nbsp;     * The first player receives 2 food, positions 2–3 receive 3, and later positions receive 4.
+&nbsp;     */
+&nbsp;    public void assignInitialFood() {
+<b class="fc">&nbsp;        List&lt;Player&gt; order = board.getTurnOrderTile().determineNewOrder();</b>
+<b class="pc">&nbsp;        if (order.isEmpty()) {</b>
+<b class="nc">&nbsp;            order = new ArrayList&lt;&gt;(players);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        for (int i = 0; i &lt; order.size(); i++) {</b>
+<b class="fc">&nbsp;            int food = (i == 0) ? 2 : (i &lt;= 2 ? 3 : 4);</b>
+<b class="fc">&nbsp;            order.get(i).gainFood(food);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Starts the game. Calls {@link #setup()} if the phase is still {@link GamePhase#SETUP};
+&nbsp;     * idempotent if setup has already run.
+&nbsp;     */
+&nbsp;    public void startGame() {
+<b class="fc">&nbsp;        if (phase == GamePhase.SETUP) {</b>
+<b class="fc">&nbsp;            setup();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    // ---- placement ----
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Moves the player&#39;s totem from the Turn Order Tile to the chosen Offer Tile
+&nbsp;     * and records the selection. Returns true on success; false if the tile is
+&nbsp;     * unknown, occupied, or null. Single Model entry-point so the listener
+&nbsp;     * mechanism (and any future per-totem events) can hang off this method.
+&nbsp;     *
+&nbsp;     * @param player the player placing their totem
+&nbsp;     * @param tile   the offer tile to place on
+&nbsp;     * @return {@code true} if placement succeeded
+&nbsp;     */
+&nbsp;    public boolean placeTotem(Player player, OfferTile tile) {
+<b class="fc">&nbsp;        if (player == null) return false;</b>
+<b class="fc">&nbsp;        if (!board.getOfferTrack().placeTotem(player, tile)) {</b>
+<b class="fc">&nbsp;            return false;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        board.getTurnOrderTile().clearTotem(player.getTotem());</b>
+<b class="fc">&nbsp;        player.chooseOfferTile(tile);</b>
+<b class="fc">&nbsp;        placementTurnIndex++;</b>
+<b class="fc">&nbsp;        fire();</b>
+<b class="fc">&nbsp;        boolean allPlaced = players.stream().allMatch(p -&gt; p.getSelectedOfferTile() != null);</b>
+<b class="fc">&nbsp;        if (allPlaced) actionPhase();</b>
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ---- action resolution ----
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Transitions to {@link GamePhase#ACTION_RESOLUTION} and records each player&#39;s
+&nbsp;     * selected tile in resolution order (A → G).
+&nbsp;     */
+&nbsp;    public void actionPhase() {
+<b class="fc">&nbsp;        finishedThisRound.clear();</b>
+<b class="fc">&nbsp;        executionOrder = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        executionTurnIndex = 0;</b>
+<b class="fc">&nbsp;        for (OfferTile tile : board.getOfferTrack().getTilesInResolutionOrder()) {</b>
+<b class="fc">&nbsp;            if (tile.getOccupiedBy() == null) continue;</b>
+<b class="fc">&nbsp;            Player activePlayer = findPlayerByTotem(tile.getOccupiedBy());</b>
+<b class="pc">&nbsp;            if (activePlayer != null) {</b>
+<b class="fc">&nbsp;                executionOrder.add(activePlayer);</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        setPhase(GamePhase.ACTION_RESOLUTION);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Signals that the given player is waiting for their B020 extra top-row pick. */
+&nbsp;    public void setExtraPickPending(Player player) {
+<b class="nc">&nbsp;        extraPickPendingId = player.getId();</b>
+<b class="nc">&nbsp;        fire();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the id of the player currently awaiting an extra pick, or {@code null}. */
+<b class="nc">&nbsp;    public String getExtraPickPendingId() { return extraPickPendingId; }</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Marks the given player as having finished their action for this round.
+&nbsp;     * When all players are done, automatically triggers {@link #endOfRound()}.
+&nbsp;     *
+&nbsp;     * @param player the player who completed their action
+&nbsp;     */
+&nbsp;    public void markPlayerDone(Player player) {
+<b class="fc">&nbsp;        finishedThisRound.add(player.getId());</b>
+<b class="fc">&nbsp;        executionTurnIndex++;</b>
+<b class="fc">&nbsp;        extraPickPendingId = null;</b>
+&nbsp;        // broadcast after every execute: ensures clients see updated rows
+&nbsp;        // and tile=&quot;-&quot; even for players that gain no food/PP (no implicit fire)
+<b class="fc">&nbsp;        fire();</b>
+<b class="fc">&nbsp;        if (finishedThisRound.size() &gt;= players.size()) {</b>
+<b class="fc">&nbsp;            finishedThisRound.clear();</b>
+<b class="fc">&nbsp;            endOfRound();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Resolves the end of a round: notifies buildings, then either resolves the final round
+&nbsp;     * (when the deck is exhausted or round 10 is complete) or a normal round.
+&nbsp;     */
+&nbsp;    public void endOfRound() {
+<b class="fc">&nbsp;        setPhase(GamePhase.END_OF_ROUND);</b>
+&nbsp;
+&nbsp;        // Notify buildings (applies to both normal and final rounds)
+<b class="fc">&nbsp;        for (Player player : players) {</b>
+<b class="fc">&nbsp;            player.getTribe().notifyBuildingsOnEndOfActionPhase(player, board);</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        boolean isFinalRound = deckExhaustedFlag || currentRound &gt;= MAX_ROUNDS;</b>
+<b class="fc">&nbsp;        if (isFinalRound) {</b>
+<b class="fc">&nbsp;            resolveFinalRound();</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            resolveNormalRound();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void resolveNormalRound() {
+&nbsp;        // Resolve bottom-row events only, then refill
+<b class="fc">&nbsp;        List&lt;EventCard&gt; events = board.sortEventsForResolution(board.getActiveRoundEvents());</b>
+<b class="pc">&nbsp;        for (EventCard event : events) {</b>
+<b class="nc">&nbsp;            event.resolveEvent(players);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        RowRefillResult result = board.refillTopRow(playerCount, currentEra);</b>
+<b class="fc">&nbsp;        handleRefillResult(result);</b>
+<b class="pc">&nbsp;        if (phase != GamePhase.GAME_OVER) {</b>
+<b class="fc">&nbsp;            setCurrentRound(currentRound + 1);</b>
+<b class="fc">&nbsp;            for (Player p : players) p.clearSelectedOfferTile();</b>
+<b class="fc">&nbsp;            List&lt;Player&gt; newOrder = board.getTurnOrderTile().determineNewOrder();</b>
+<b class="pc">&nbsp;            if (!newOrder.isEmpty()) {</b>
+<b class="nc">&nbsp;                players.clear();</b>
+<b class="nc">&nbsp;                players.addAll(newOrder);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            placementTurnIndex = 0;</b>
+<b class="fc">&nbsp;            setPhase(GamePhase.PLACEMENT);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void resolveFinalRound() {
+&nbsp;        // Collect ALL events from BOTH rows, sort together (Sustenance always
+&nbsp;        // last), resolve once. No row discard/move/refill.
+<b class="fc">&nbsp;        List&lt;EventCard&gt; allEvents = board.sortEventsForResolution(board.getAllVisibleEvents());</b>
+<b class="fc">&nbsp;        for (EventCard event : allEvents) {</b>
+<b class="fc">&nbsp;            event.resolveEvent(players);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        triggerEndGame();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Applies the result of a row refill: handles era transitions and sets the
+&nbsp;     * deck-exhausted flag if applicable.
+&nbsp;     *
+&nbsp;     * @param result the result returned by {@link Board#refillTopRow}
+&nbsp;     */
+&nbsp;    public void handleRefillResult(RowRefillResult result) {
+<b class="fc">&nbsp;        if (result == null) return;</b>
+<b class="fc">&nbsp;        if (result.isEraTransitionTriggered()) {</b>
+<b class="fc">&nbsp;            setCurrentEra(result.getNewEra());</b>
+<b class="fc">&nbsp;            board.applyEraTransition(currentEra);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (result.isDeckExhausted()) {</b>
+&nbsp;            // Set flag so NEXT round&#39;s endOfRound() uses the final-round path
+<b class="fc">&nbsp;            deckExhaustedFlag = true;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Transitions to final scoring, calculates scores, and sets the phase to
+&nbsp;     * {@link GamePhase#GAME_OVER}.
+&nbsp;     */
+&nbsp;    public void triggerEndGame() {
+<b class="fc">&nbsp;        setPhase(GamePhase.FINAL_SCORING);</b>
+&nbsp;        // Events already resolved by the final-round path in endOfRound()
+<b class="fc">&nbsp;        calculateFinalScore();</b>
+<b class="fc">&nbsp;        setPhase(GamePhase.GAME_OVER);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Applies all end-game scoring bonuses to every player. */
+&nbsp;    public void calculateFinalScore() {
+<b class="fc">&nbsp;        ScoreCalculator.awardFinalPrestige(players);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns players ordered by tie-broken final score: PP desc, then Food
+&nbsp;     * desc (rules §16). Does NOT mutate {@link #getPlayers()}.
+&nbsp;     */
+&nbsp;    public List&lt;Player&gt; getRanking() {
+<b class="fc">&nbsp;        List&lt;Player&gt; ranked = new ArrayList&lt;&gt;(players);</b>
+<b class="fc">&nbsp;        ranked.sort(Comparator.comparingInt(Player::getPrestigePoints)</b>
+<b class="fc">&nbsp;                .thenComparingInt(Player::getFood)</b>
+<b class="fc">&nbsp;                .reversed());</b>
+<b class="fc">&nbsp;        return ranked;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private Player findPlayerByTotem(Totem totem) {
+<b class="fc">&nbsp;        return players.stream()</b>
+<b class="fc">&nbsp;                .filter(player -&gt; player.getTotem().equals(totem))</b>
+<b class="fc">&nbsp;                .findFirst()</b>
+<b class="fc">&nbsp;                .orElse(null);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ---- getters ----
+&nbsp;
+&nbsp;    /** Returns the current round number (1-based). */
+<b class="fc">&nbsp;    public int getCurrentRound()    { return currentRound; }</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns the player whose turn it is to place their totem,
+&nbsp;     * or {@code null} if all players have already placed.
+&nbsp;     */
+&nbsp;    public Player getCurrentPlacementPlayer() {
+<b class="pc">&nbsp;        return placementTurnIndex &lt; players.size() ? players.get(placementTurnIndex) : null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the player whose turn it is to execute their action, or {@code null} if all have executed. */
+&nbsp;    public Player getCurrentExecutionPlayer() {
+<b class="pc">&nbsp;        return executionTurnIndex &lt; executionOrder.size() ? executionOrder.get(executionTurnIndex) : null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the current era. */
+<b class="fc">&nbsp;    public Era getCurrentEra()      { return currentEra; }</b>
+&nbsp;
+&nbsp;    /** Returns the maximum number of rounds in a game (always 10). */
+<b class="fc">&nbsp;    public int getMaxRounds()       { return MAX_ROUNDS; }</b>
+&nbsp;
+&nbsp;    /** Returns the player count for this game session. */
+<b class="nc">&nbsp;    public PlayerCount getPlayerCount() { return playerCount; }</b>
+&nbsp;
+&nbsp;    /** Returns the current game phase. */
+<b class="fc">&nbsp;    public GamePhase getPhase()     { return phase; }</b>
+&nbsp;
+&nbsp;    /** Returns the board. */
+<b class="fc">&nbsp;    public Board getBoard()         { return board; }</b>
+&nbsp;
+&nbsp;    /** Returns a defensive copy of the player list in current turn order. */
+&nbsp;    public List&lt;Player&gt; getPlayers() {
+<b class="fc">&nbsp;        return new ArrayList&lt;&gt;(players);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

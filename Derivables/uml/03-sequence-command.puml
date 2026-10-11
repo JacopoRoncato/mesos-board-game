@@ -1,0 +1,83 @@
+@startuml 03-sequence-command
+' Sequence diagram: generic command processing after game start.
+' Concrete example: CommandMessage("PLACE bob B").
+
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam sequenceParticipant {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam note {
+    BackgroundColor #FFF3CD
+}
+
+title MESOS — Generic Command Processing (after start)
+
+actor "TCP Client\n(bob)" as C
+actor "TCP Client\n(alice)" as CB
+participant "TcpClientHandler" as TCH
+participant "BlockingQueue\n<ClientMessage>" as BQ
+participant ControllerWorker as CW
+participant "CommandMessage\n.process()" as CM
+participant Controller as CTRL
+participant Game as G
+participant "ModelListener\n→ CallBack" as ML
+participant ServerRegistry as SR
+
+note over C, SR
+    Concrete message: CommandMessage("PLACE bob B")
+    All post-start commands go through CommandMessage.
+    No PlaceMessage, EndRoundMessage etc. — CommandMessage is the definitive solution.
+end note
+
+C -> TCH : writeObject(CommandMessage("PLACE bob B"))
+TCH -> BQ : queue.put(msg)
+
+note right of BQ
+    TcpClientHandler is multi-threaded:
+    each client has its own thread.
+    The queue serializes access.
+end note
+
+BQ -> CW : take() — CommandMessage
+CW -> CM : msg.setRegistry(registry)
+CW -> CM : msg.process(controller)
+
+CM -> CTRL : processCmd("PLACE bob B")
+CTRL -> G : placeTotem(player_bob, offerTile_B)
+
+G --> ML : PropertyChangeEvent("update", null, null)
+
+ML -> SR : broadcast(SnapshotMessage.from(game))
+SR -> C : sendMessage(SnapshotMessage)
+SR -> CB : sendMessage(SnapshotMessage)
+
+note right
+    All connected clients
+    receive the updated
+    snapshot automatically.
+end note
+
+CTRL --> CM : "OK PLACE bob → B"
+CM -> C : sendMessage(OkMessage("PLACE bob → B"))
+
+== Case: unregistered nick (error) ==
+
+note over TCH, BQ
+    If the sender is not in the registry,
+    TcpClientHandler throws RemoteException
+    and does not enqueue the message.
+end note
+
+== Disconnection during the game ==
+
+note over TCH, SR
+    If IOException in the game loop:
+    TcpClientHandler calls
+    registry.handleDisconnection(nick)
+    → views.remove(nick)
+    → broadcast(ErrMessage("PLAYER_DISCONNECTED bob"))
+end note
+
+@enduml

@@ -1,0 +1,242 @@
+@startuml 05-server-class-diagram
+' Class diagram: mesos.server package — responsibilities and dependencies.
+' Updated after:
+'   eecf3ea — ServerRegistry gains AtomicBoolean terminated
+'   fcec8e7 — ServerRegistry.unregister(); RemoteGameService.login() returns String,
+'             numPlayers removed from login(), setNumPlayers() added
+'   FA1     — ScoreRepository, ScoreResult (mesos.db); ServerRegistry.setRepository(); RankingMessage broadcast
+'   FA2     — GamePersistence (mesos.server); ServerRegistry.setSavedGame(); recovery flow
+'   heartbeat — ServerRegistry.startHeartbeat(); TcpVirtualView gains registry field
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam interface {
+    BackgroundColor #E8F5E9
+    BorderColor #338833
+}
+
+title MESOS — Class Diagram: server package (current state)
+
+package "mesos.server" {
+
+    class ServerMain {
+        - {static} DEFAULT_TCP_PORT : int = 1234
+        - {static} DEFAULT_RMI_PORT : int = 1099
+        - {static} RMI_BINDING : String
+        + {static} main(String[])
+        - {static} acceptLoop(ServerSocket, BlockingQueue, ServerRegistry)
+    }
+
+    class ServerRegistry {
+        - views : ConcurrentHashMap<String, VirtualView>
+        - expectedPlayers : AtomicInteger
+        - controllerRef : AtomicReference<Controller>
+        - terminated : AtomicBoolean
+        - heartbeatThread : Thread
+        - repository : ScoreRepository
+        - savedGame : Game
+        - persistence : GamePersistence
+        - chosenColors : Map<String, TotemColor>
+        + setExpectedPlayers(int)
+        + getExpectedPlayers() : int
+        + tryRegister(String, VirtualView) : boolean
+        + unregister(String)
+        + handleDisconnection(String)
+        + get(String) : VirtualView
+        + getNicks() : List<String>
+        + getRegisteredCount() : int
+        + isFull() : boolean
+        + setController(Controller)
+        + getController() : Controller
+        + broadcast(ServerMessage)
+        + startHeartbeat()
+        + setRepository(ScoreRepository)
+        + setSavedGame(Game)
+        + isRecovering() : boolean
+        + checkRecoveryComplete()
+        + getAvailableColors() : List<TotemColor>
+        + claimColor(String, TotemColor) : TotemColor
+        + getChosenColor(String) : TotemColor
+    }
+
+    class GamePersistence {
+        - savePath : String
+        + save(Game)
+        + load() : Game
+        + delete()
+    }
+
+    class TcpClientHandler <<Runnable>> {
+        - socket : Socket
+        - queue : BlockingQueue<ClientMessage>
+        - registry : ServerRegistry
+        + run()
+    }
+
+    class ControllerWorker <<Runnable>> {
+        - queue : BlockingQueue<ClientMessage>
+        - registry : ServerRegistry
+        + run()
+    }
+
+    class ModelListener <<PropertyChangeListener>> {
+        - callBack : CallBack
+        + propertyChange(PropertyChangeEvent)
+    }
+
+    interface CallBack <<FunctionalInterface>> {
+        + gotEvent(PropertyChangeEvent)
+    }
+
+    interface VirtualView <<interface>> {
+        + sendMessage(ServerMessage)
+        + getNick() : String
+    }
+
+    class TcpVirtualView {
+        - out : ObjectOutputStream
+        - nick : String
+        - registry : ServerRegistry
+        + sendMessage(ServerMessage)
+        + getNick() : String
+    }
+
+    class RmiVirtualView {
+        - callback : RemoteGameCallback
+        - nick : String
+        + sendMessage(ServerMessage)
+        + getNick() : String
+    }
+
+    interface RemoteGameService <<Remote>> {
+        + login(String nick, RemoteGameCallback) : String
+        + setNumPlayers(int n)
+        + getAvailableColors() : List<TotemColor>
+        + claimColor(String nick, TotemColor) : TotemColor
+        + sendMessage(ClientMessage, String nick)
+    }
+
+    class RemoteGameServiceImpl <<UnicastRemoteObject>> {
+        - queue : BlockingQueue<ClientMessage>
+        - registry : ServerRegistry
+        + login(String nick, RemoteGameCallback) : String
+        + setNumPlayers(int n)
+        + getAvailableColors() : List<TotemColor>
+        + claimColor(String nick, TotemColor) : TotemColor
+        + sendMessage(ClientMessage, String nick)
+    }
+}
+
+package "mesos.db" {
+    class ScoreRepository {
+        - jdbcUrl : String
+        - user : String
+        - password : String
+        + saveResults(List<Player>, int numPlayers)
+        + getRanking(int numPlayers) : List<ScoreResult>
+    }
+
+    class ScoreResult {
+        - nickname : String
+        - totalScore : int
+        - numPlayers : int
+        - gamesPlayed : int
+    }
+}
+
+' Internal dependencies
+ServerMain --> ServerRegistry : creates
+ServerMain --> ControllerWorker : starts thread
+ServerMain --> TcpClientHandler : spawns for each client
+ServerMain --> ScoreRepository : creates (optional, FA1)
+ServerMain ..> ServerRegistry : setRepository()\nstartHeartbeat()
+
+TcpClientHandler --> ServerRegistry : tryRegister()\nunregister()\nhandleDisconnection()
+TcpClientHandler --> "BlockingQueue" : put()
+
+ControllerWorker --> "BlockingQueue" : take()
+ControllerWorker --> ServerRegistry : getController()
+ControllerWorker --> ClientMessage : setRegistry()\nprocess(controller)
+
+ServerRegistry --> VirtualView : broadcast → sendMessage()
+ServerRegistry --> Controller : setController()\ngetController()
+ServerRegistry --> ScoreRepository : saveResults()\ngetRanking() (FA1)
+ServerRegistry --> GamePersistence : save()\nload() (FA2)
+
+ScoreRepository --> ScoreResult : creates
+
+TcpVirtualView --> ServerRegistry : handleDisconnection()\non IOException
+
+ModelListener --> CallBack : delegates gotEvent()
+ModelListener ..|> PropertyChangeListener
+
+' Architectural note
+note right of ControllerWorker
+    Single thread: ensures all
+    Controller accesses are
+    serialized.
+    No manual locking needed
+    on Controller or Model.
+end note
+
+note right of TcpClientHandler
+    Lobby + colour handshake:
+    1. Read LoginMessage(nick, 0)
+    2. tryRegister() → NICKNAME_TAKEN or:
+       - expectedPlayers == -1 → LOBBY_FIRST
+         → read second LoginMessage(nick, n)
+         → setExpectedPlayers(n) → LOBBY_ACCEPTED
+       - else → LOBBY_JOINED n/m
+    3. Send InfoMessage(availableColors)
+    4. Read ColorMessage → claimColor() → COLOR_ACCEPTED
+    5. Game message loop.
+    On IOException: handleDisconnection(nick).
+    On recovery (FA2): handleRecovery() replaces step 2-4.
+end note
+
+note right of ServerRegistry
+    terminated (AtomicBoolean):
+    handleDisconnection() is idempotent —
+    broadcasts PLAYER_DISCONNECTED, nullifies
+    controller, clears views, interrupts heartbeat.
+    unregister() removes from lobby without
+    triggering game termination.
+    ——
+    FA1: repository != null → save score at GAME_OVER
+         and broadcast RankingMessage.
+    FA2: savedGame != null → isRecovering() = true;
+         checkRecoveryComplete() resumes game when
+         all expected players have reconnected.
+end note
+
+note right of GamePersistence
+    FA2: serializes Game to mesos-save.dat
+    after every PLACEMENT transition.
+    ServerMain loads the save at startup
+    if the file exists.
+    delete() called on GAME_OVER or
+    RECOVERY_TIMEOUT (60 s).
+end note
+
+note right of ModelListener
+    Wired by StartMessage.process().
+    The CallBack lambda does:
+    registry.broadcast(
+        SnapshotMessage.from(game))
+end note
+
+' External dependencies (outside package)
+package "external dependencies" #EEFFEE {
+    abstract class ClientMessage
+    class Controller
+    interface PropertyChangeListener <<java.beans>>
+    class ServerMessage
+    interface RemoteGameCallback <<mesos.client>>
+}
+
+@enduml

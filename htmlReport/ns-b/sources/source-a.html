@@ -1,0 +1,243 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TotemBadge</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.widget</a>
+</div>
+
+<h1>Coverage Summary for Class: TotemBadge (mesos.client.ui.widget)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TotemBadge</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/37)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TotemBadge$Colour</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/38)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.widget;
+&nbsp;
+&nbsp;import java.awt.AlphaComposite;
+&nbsp;import java.awt.BasicStroke;
+&nbsp;import java.awt.Color;
+&nbsp;import java.awt.Dimension;
+&nbsp;import java.awt.Graphics;
+&nbsp;import java.awt.Graphics2D;
+&nbsp;import java.awt.RenderingHints;
+&nbsp;import java.awt.image.BufferedImage;
+&nbsp;import java.io.IOException;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.Locale;
+&nbsp;import java.util.Map;
+&nbsp;import javax.imageio.ImageIO;
+&nbsp;import javax.swing.JComponent;
+&nbsp;import mesos.client.ui.resource.Theme;
+&nbsp;
+&nbsp;/**
+&nbsp; * Renders one of the 5 MESOS totem PNGs (red / yellow / cyan / purple /
+&nbsp; * white) at a fixed pixel size. Used in the lobby colour picker, on the
+&nbsp; * offer track as the occupant marker, and inside PlayerPanel banners.
+&nbsp; *
+&nbsp; * &lt;p&gt;Images are loaded from {@code /img/totem/&lt;colour&gt;.png} on the
+&nbsp; * classpath. Caches one BufferedImage per colour so repeated badges
+&nbsp; * share memory.
+&nbsp; */
+&nbsp;public final class TotemBadge extends JComponent {
+&nbsp;
+<b class="nc">&nbsp;    public enum Colour { RED, YELLOW, CYAN, PURPLE, WHITE }</b>
+&nbsp;
+<b class="nc">&nbsp;    private static final Map&lt;Colour, BufferedImage&gt; CACHE = new HashMap&lt;&gt;();</b>
+&nbsp;
+&nbsp;    private final Colour colour;
+&nbsp;    private final int targetSize;
+<b class="nc">&nbsp;    private boolean dimmed = false;</b>
+&nbsp;
+&nbsp;    public void setDimmed(boolean d) {
+<b class="nc">&nbsp;        if (d == dimmed) return;</b>
+<b class="nc">&nbsp;        dimmed = d;</b>
+<b class="nc">&nbsp;        repaint();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Constructs a TotemBadge.
+&nbsp;     *
+&nbsp;     * @param colour     the totem colour to render
+&nbsp;     * @param targetSize preferred width in pixels; height is scaled at 1.4× for a portrait standee
+&nbsp;     */
+<b class="nc">&nbsp;    public TotemBadge(Colour colour, int targetSize) {</b>
+<b class="nc">&nbsp;        this.colour = colour;</b>
+<b class="nc">&nbsp;        this.targetSize = targetSize;</b>
+<b class="nc">&nbsp;        setPreferredSize(new Dimension(Theme.scale(targetSize), (int) (Theme.scale(targetSize) * 1.4)));</b>
+<b class="nc">&nbsp;        setOpaque(false);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    protected void paintComponent(Graphics g) {
+<b class="nc">&nbsp;        super.paintComponent(g);</b>
+<b class="nc">&nbsp;        BufferedImage img = loadCached(colour);</b>
+<b class="nc">&nbsp;        if (img == null) return;</b>
+<b class="nc">&nbsp;        Graphics2D g2 = (Graphics2D) g.create();</b>
+<b class="nc">&nbsp;        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,</b>
+&nbsp;                            RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+<b class="nc">&nbsp;        int w = getWidth();</b>
+<b class="nc">&nbsp;        int h = getHeight();</b>
+<b class="nc">&nbsp;        double scale = Math.min(w / (double) img.getWidth(), h / (double) img.getHeight());</b>
+<b class="nc">&nbsp;        int drawW = (int) (img.getWidth() * scale);</b>
+<b class="nc">&nbsp;        int drawH = (int) (img.getHeight() * scale);</b>
+<b class="nc">&nbsp;        int x = (w - drawW) / 2;</b>
+<b class="nc">&nbsp;        int y = (h - drawH) / 2;</b>
+<b class="nc">&nbsp;        g2.drawImage(img, x, y, drawW, drawH, null);</b>
+<b class="nc">&nbsp;        if (dimmed) {</b>
+<b class="nc">&nbsp;            int margin = Math.max(6, drawW / 8);</b>
+<b class="nc">&nbsp;            int strokeW = Math.max(4, drawW / 10);</b>
+<b class="nc">&nbsp;            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.85f));</b>
+<b class="nc">&nbsp;            g2.setColor(Color.RED);</b>
+<b class="nc">&nbsp;            g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));</b>
+<b class="nc">&nbsp;            g2.drawLine(x + margin, y + margin, x + drawW - margin, y + drawH - margin);</b>
+<b class="nc">&nbsp;            g2.drawLine(x + drawW - margin, y + margin, x + margin, y + drawH - margin);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        g2.dispose();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static synchronized BufferedImage loadCached(Colour c) {
+<b class="nc">&nbsp;        return CACHE.computeIfAbsent(c, key -&gt; {</b>
+<b class="nc">&nbsp;            String path = &quot;/img/totem/&quot; + key.name().toLowerCase(Locale.ROOT) + &quot;.png&quot;;</b>
+<b class="nc">&nbsp;            try (var in = TotemBadge.class.getResourceAsStream(path)) {</b>
+<b class="nc">&nbsp;                return (in != null) ? ImageIO.read(in) : null;</b>
+<b class="nc">&nbsp;            } catch (IOException e) { return null; }</b>
+&nbsp;        });
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

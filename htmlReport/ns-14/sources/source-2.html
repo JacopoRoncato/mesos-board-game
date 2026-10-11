@@ -1,0 +1,286 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TurnOrderTile</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.order</a>
+</div>
+
+<h1>Coverage Summary for Class: TurnOrderTile (mesos.order)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TurnOrderTile</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (9/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97,1%
+  </span>
+  <span class="absValue">
+    (33/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (43/43)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TurnOrderTile$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97,1%
+  </span>
+  <span class="absValue">
+    (33/34)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (44/44)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.order;
+&nbsp;
+&nbsp;import java.io.Serializable;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import mesos.enums.PlayerCount;
+&nbsp;import mesos.player.Player;
+&nbsp;import mesos.player.Totem;
+&nbsp;
+&nbsp;/**
+&nbsp; * The turn-order tile: an ordered sequence of {@link TurnOrderSpace}s on which
+&nbsp; * players place their totems during the action phase to claim their place in next
+&nbsp; * round&#39;s turn order. The last space is a penalty space.
+&nbsp; */
+&nbsp;public class TurnOrderTile implements Serializable {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private final List&lt;TurnOrderSpace&gt; spaces;
+&nbsp;    private final Map&lt;Totem, Player&gt; playerByTotem;
+&nbsp;
+&nbsp;    /** Creates an empty tile. Call {@link #configureForPlayerCount} before use. */
+<b class="fc">&nbsp;    public TurnOrderTile() {</b>
+<b class="fc">&nbsp;        this.spaces = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        this.playerByTotem = new LinkedHashMap&lt;&gt;();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Configures the spaces and their food bonuses for the given player count.
+&nbsp;     * Food bonuses per space (last element = penalty space, bonus 0).
+&nbsp;     * Values from rulebook: 2p → +1,penalty; 3p → +2,0,penalty;
+&nbsp;     * 4p → +2,+1,0,penalty; 5p → +3,+1,0,0,penalty.
+&nbsp;     */
+&nbsp;    public void configureForPlayerCount(PlayerCount playerCount) {
+<b class="fc">&nbsp;        spaces.clear();</b>
+<b class="fc">&nbsp;        playerByTotem.clear();</b>
+<b class="pc">&nbsp;        int[] bonuses = switch (playerCount) {</b>
+<b class="fc">&nbsp;            case TWO   -&gt; new int[]{1, 0};</b>
+<b class="fc">&nbsp;            case THREE -&gt; new int[]{2, 0, 0};</b>
+<b class="fc">&nbsp;            case FOUR  -&gt; new int[]{2, 1, 0, 0};</b>
+<b class="fc">&nbsp;            case FIVE  -&gt; new int[]{3, 1, 0, 0, 0};</b>
+&nbsp;        };
+<b class="fc">&nbsp;        for (int i = 0; i &lt; bonuses.length; i++) {</b>
+<b class="fc">&nbsp;            boolean last = (i == bonuses.length - 1);</b>
+<b class="fc">&nbsp;            spaces.add(new TurnOrderSpace(i, bonuses[i], last));</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Places the given totem on the first free space and records the owning player.
+&nbsp;     *
+&nbsp;     * @return the space the totem was placed on, or {@code null} if all spaces are full
+&nbsp;     */
+&nbsp;    public TurnOrderSpace addTotem(Totem totem, Player player) {
+<b class="fc">&nbsp;        TurnOrderSpace firstFreeSpace = getFirstFreeSpace();</b>
+<b class="fc">&nbsp;        if (firstFreeSpace != null) {</b>
+<b class="fc">&nbsp;            firstFreeSpace.assignTotem(totem);</b>
+<b class="fc">&nbsp;            playerByTotem.put(totem, player);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return firstFreeSpace;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns the players in turn order for the next round, in the order their
+&nbsp;     * totems were placed on the spaces.
+&nbsp;     */
+&nbsp;    public List&lt;Player&gt; determineNewOrder() {
+<b class="fc">&nbsp;        List&lt;Player&gt; ordered = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (TurnOrderSpace space : spaces) {</b>
+<b class="fc">&nbsp;            if (space.getOccupiedBy() != null) {</b>
+<b class="fc">&nbsp;                Player player = playerByTotem.get(space.getOccupiedBy());</b>
+<b class="pc">&nbsp;                if (player != null) {</b>
+<b class="fc">&nbsp;                    ordered.add(player);</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        return ordered;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Applies the food bonus or penalty associated with a turn-order space.
+&nbsp;     * The last space deducts 1 food (or 2 PP if the player cannot pay).
+&nbsp;     */
+&nbsp;    public void applySpaceEffect(TurnOrderSpace space, Player player) {
+<b class="fc">&nbsp;        if (space == null || player == null) {</b>
+&nbsp;            return;
+&nbsp;        }
+<b class="fc">&nbsp;        if (space.getFoodBonus() &gt; 0) {</b>
+<b class="fc">&nbsp;            player.gainFood(space.getFoodBonus());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (space.isLastSpace() &amp;&amp; !player.payFood(1)) {</b>
+<b class="fc">&nbsp;            player.removePrestige(2);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the first space that currently has no totem, or {@code null} if all are occupied. */
+&nbsp;    public TurnOrderSpace getFirstFreeSpace() {
+<b class="fc">&nbsp;        return spaces.stream().filter(TurnOrderSpace::isFree).findFirst().orElse(null);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns a defensive copy of all spaces on this tile. */
+&nbsp;    public List&lt;TurnOrderSpace&gt; getSpaces() {
+<b class="fc">&nbsp;        return new ArrayList&lt;&gt;(spaces);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Removes all totems from all spaces and clears the player mapping. */
+&nbsp;    public void clearSpaces() {
+<b class="fc">&nbsp;        spaces.forEach(TurnOrderSpace::clear);</b>
+<b class="fc">&nbsp;        playerByTotem.clear();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Removes a single totem from whichever space it currently occupies.
+&nbsp;     * Used during the placement phase as players move their totems off
+&nbsp;     * the Turn Order Tile and onto Offer Tiles (rules §6).
+&nbsp;     *
+&nbsp;     * @param totem the totem to remove
+&nbsp;     * @return {@code true} if the totem was found and removed
+&nbsp;     */
+&nbsp;    public boolean clearTotem(Totem totem) {
+<b class="fc">&nbsp;        if (totem == null) return false;</b>
+<b class="fc">&nbsp;        boolean found = false;</b>
+<b class="fc">&nbsp;        for (TurnOrderSpace space : spaces) {</b>
+<b class="fc">&nbsp;            if (totem.equals(space.getOccupiedBy())) {</b>
+<b class="fc">&nbsp;                space.clear();</b>
+<b class="fc">&nbsp;                found = true;</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        if (found) {</b>
+<b class="fc">&nbsp;            playerByTotem.remove(totem);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return found;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

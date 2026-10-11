@@ -1,0 +1,242 @@
+@startuml 07-model-class-diagram
+' High-level Model class diagram.
+' Shows main structure and relationships without overloading with methods.
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam enum {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+
+title MESOS — Model: high-level class diagram
+
+' ─── Core ────────────────────────────────────────────────────────────────────
+
+class Game {
+    - playerCount : PlayerCount
+    - players : List<Player>
+    - board : Board
+    - currentRound : int
+    - currentEra : Era
+    - phase : GamePhase
+    - deckExhaustedFlag : boolean
+    - listener : PropertyChangeListener
+    + startGame()
+    + placeTotem(Player, OfferTile)
+    + actionPhase()
+    + endOfRound()
+    + setListener(PropertyChangeListener)
+    + getPhase() : GamePhase
+    + getCurrentRound() : int
+    + getCurrentEra() : Era
+    + getPlayers() : List<Player>
+    + getBoard() : Board
+}
+
+class Board {
+    - tribeDeck : List<TribeDeckCard>
+    - buildingDecks : Map<Era, List<BuildingCard>>
+    - topRow : VisibleRowState
+    - bottomRow : VisibleRowState
+    - offerTrack : OfferTrack
+    - turnOrderTile : TurnOrderTile
+    + buildTribeDeck(PlayerCount)
+    + getVisibleRow(VisibleRow) : VisibleRowState
+    + getOfferTrack() : OfferTrack
+    + getTurnOrderTile() : TurnOrderTile
+}
+
+class Player {
+    - id : String
+    - food : int
+    - prestigePoints : int
+    - totem : Totem
+    - tribe : Tribe
+    - selectedOfferTile : OfferTile
+    - listener : PropertyChangeListener
+    + payFood(int) : boolean
+    + gainFood(int)
+    + gainPrestigePoints(int)
+    + getTotem() : Totem
+    + getTribe() : Tribe
+    + getId() : String
+}
+
+class Totem {
+    - color : TotemColor
+    + getColor() : TotemColor
+}
+
+class Tribe {
+    - characterCards : List<CharacterCard>
+    - buildingCards : List<BuildingCard>
+    + addCharacter(CharacterCard, Player)
+    + addBuilding(BuildingCard, Player)
+    + getCharacters() : List<CharacterCard>
+    + getBuildings() : List<BuildingCard>
+}
+
+' ─── Board components ─────────────────────────────────────────────────────────
+
+class OfferTrack {
+    - tiles : List<OfferTile>
+    + configureForPlayerCount(PlayerCount)
+    + getTiles() : List<OfferTile>
+    + getTile(OfferTileId) : OfferTile
+}
+
+class OfferTile {
+    - id : OfferTileId
+    - topPicks : int
+    - bottomPicks : int
+    - foodBonus : int
+    - occupiedBy : Totem
+    + occupy(Totem)
+    + release()
+    + getId() : OfferTileId
+    + getOccupiedBy() : Totem
+}
+
+class TurnOrderTile {
+    - spaces : List<TurnOrderSpace>
+    + configureForPlayerCount(PlayerCount)
+    + place(Player, TurnOrderSpace)
+}
+
+class TurnOrderSpace {
+    - position : int
+    - foodBonus : int
+}
+
+' ─── Card hierarchy ───────────────────────────────────────────────────────────
+
+abstract class Card <<abstract>> {
+    - name : String
+    - era : Era
+    + getName() : String
+    + getEra() : Era
+}
+
+abstract class TribeDeckCard <<abstract>> {
+    - allowedPlayerCounts : Set<PlayerCount>
+    + getAllowedPlayerCounts() : Set<PlayerCount>
+}
+
+abstract class CharacterCard <<abstract>> {
+    + onPurchase(Player)
+    + getType() : CharacterType
+    + getBaseSustenanceDiscount() : int
+    + getShamanIcons() : int
+}
+
+class BuildingCard {
+    - foodCost : int
+    - printedPrestigePoints : int
+    - effect : BuildingEffect
+    + getEffect() : BuildingEffect
+    + getFoodCost() : int
+    + getPrestigePoints() : int
+}
+
+abstract class EventCard <<abstract>> {
+    - eventType : EventType
+    + resolveEvent(List<Player>)
+    + getEventType() : EventType
+}
+
+class FinalEventCard {
+    ' Marker: signals deck exhausted.
+    ' Not a real EventCard.
+}
+
+' Concrete characters
+class Hunter
+class Shaman
+class Artist
+class Builder
+class Inventor
+class Gatherer
+
+' Concrete events
+class SustenanceEvent
+class HuntingEvent
+class ShamanicRitualEvent
+class CavePaintingsEvent
+
+' ─── Effects ─────────────────────────────────────────────────────────────────
+
+abstract class BuildingEffect <<abstract>> {
+    + onAcquire(Player)
+    + onCharacterAdded(Player, CharacterCard)
+    + onTurnOrderPlaced(Player, TurnOrderSpace)
+    + onEndOfActionPhase(Player, Board)
+    + getExtraSustenanceDiscount(Player) : int
+    + getEndGameScore(Player) : int
+}
+
+' ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Era { I; II; III }
+enum GamePhase { SETUP; PLACEMENT; ACTION_RESOLUTION; END_OF_ROUND; FINAL_SCORING; GAME_OVER }
+enum PlayerCount { TWO; THREE; FOUR; FIVE }
+enum TotemColor { RED; BLUE; WHITE; YELLOW; PURPLE }
+enum OfferTileId { A; B; C; D; E; F; G }
+enum EventType { HUNTING; SHAMANIC_RITUAL; CAVE_PAINTINGS; SUSTENANCE }
+enum CharacterType { HUNTER; SHAMAN; ARTIST; BUILDER; INVENTOR; GATHERER }
+enum VisibleRow { TOP; BOTTOM }
+
+' ─── Relationships ───────────────────────────────────────────────────────────
+
+Game "1" *-- "1" Board
+Game "1" *-- "2..5" Player
+Game --> Era
+Game --> GamePhase
+Game --> PlayerCount
+
+Player "1" *-- "1" Totem
+Player "1" *-- "1" Tribe
+Player --> OfferTile : selectedOfferTile
+
+Tribe "1" *-- "*" CharacterCard
+Tribe "1" *-- "*" BuildingCard
+
+Board "1" *-- "1" OfferTrack
+Board "1" *-- "1" TurnOrderTile
+
+OfferTrack "1" *-- "2..5" OfferTile
+OfferTile --> OfferTileId
+OfferTile --> Totem : occupiedBy
+
+TurnOrderTile "1" *-- "2..5" TurnOrderSpace
+
+Card <|-- TribeDeckCard
+Card <|-- BuildingCard
+TribeDeckCard <|-- CharacterCard
+TribeDeckCard <|-- EventCard
+TribeDeckCard <|-- FinalEventCard
+
+CharacterCard <|-- Hunter
+CharacterCard <|-- Shaman
+CharacterCard <|-- Artist
+CharacterCard <|-- Builder
+CharacterCard <|-- Inventor
+CharacterCard <|-- Gatherer
+
+EventCard <|-- SustenanceEvent
+EventCard <|-- HuntingEvent
+EventCard <|-- ShamanicRitualEvent
+EventCard <|-- CavePaintingsEvent
+
+BuildingCard --> BuildingEffect
+
+Totem --> TotemColor
+EventCard --> EventType
+CharacterCard --> CharacterType
+
+@enduml

@@ -1,0 +1,63 @@
+@startuml 12-controller-class-diagram
+' Class diagram: mesos.controller package.
+' Updated after:
+'   893e187 — StateSerializer removed from codebase; STATE command removed from Controller
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam note {
+    BackgroundColor #FFF3CD
+    BorderColor #FF9900
+}
+
+title MESOS — Class Diagram: controller package
+
+package "mesos.controller" {
+
+    class Controller {
+        - game : Game
+        + Controller(Game)
+        + processCmd(String raw) : String
+        + setListener(PropertyChangeListener)
+        - cmdStart() : String
+        - cmdPlace(String[]) : String
+        - cmdExecute(String[]) : String
+        - cmdExtraPick(String[]) : String
+        - cmdSkipExtra(String[]) : String
+    }
+}
+
+package "external dependencies" #EEFFEE {
+    class Game
+    interface PropertyChangeListener <<java.beans>>
+}
+
+Controller --> Game : game\n(processes commands\nand mutates Model)
+
+note right of Controller
+    processCmd(String raw):
+    - uppercases verb
+    - phase guard on every command
+      (ERR wrong_phase if mismatch)
+    - switch on verb:
+        START, PLACE,
+        EXECUTE, EXTRA_PICK, SKIP_EXTRA
+    - returns "OK ..." | "ERR ..."
+    - catches RuntimeException
+      from Model → ERR
+    Verbs are case-insensitive;
+    nicknames are case-sensitive.
+end note
+
+note bottom of Controller
+    StateSerializer was removed in commit 893e187.
+    The legacy text STATE command no longer exists.
+    All state is delivered via SnapshotMessage (object serialization).
+end note
+
+@enduml

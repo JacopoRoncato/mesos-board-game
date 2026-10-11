@@ -1,0 +1,285 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > BoardRenderer</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.tui</a>
+</div>
+
+<h1>Coverage Summary for Class: BoardRenderer (mesos.client.tui)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">BoardRenderer</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/60)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/88)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.tui;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import mesos.network.server.SnapshotMessage;
+&nbsp;import mesos.network.server.SnapshotMessage.PlayerSnapshot;
+&nbsp;import mesos.network.server.SnapshotMessage.SlotSnapshot;
+&nbsp;import mesos.network.server.SnapshotMessage.TileSnapshot;
+&nbsp;
+&nbsp;/**
+&nbsp; * Renders a SnapshotMessage as ASCII art to stdout.
+&nbsp; */
+<b class="nc">&nbsp;public class BoardRenderer {</b>
+&nbsp;
+&nbsp;    private static final int SLOT_W = 20;
+<b class="nc">&nbsp;    private static final String SEP = &quot;=&quot;.repeat(64);</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Renders the board without player context (no &quot;your turn&quot; banner).
+&nbsp;     *
+&nbsp;     * @param snap the snapshot to render
+&nbsp;     */
+&nbsp;    public static void render(SnapshotMessage snap) {
+<b class="nc">&nbsp;        render(snap, null, false);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Renders the board with player context, treating the player as not yet executed.
+&nbsp;     *
+&nbsp;     * @param snap the snapshot to render
+&nbsp;     * @param nick the local player&#39;s nickname (used for the &quot;your turn&quot; banner)
+&nbsp;     */
+&nbsp;    public static void render(SnapshotMessage snap, String nick) {
+<b class="nc">&nbsp;        render(snap, nick, false);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Renders the board with full context. When {@code done} is {@code true} the
+&nbsp;     * ACTION_RESOLUTION &quot;your turn&quot; banner is suppressed (the player already executed).
+&nbsp;     *
+&nbsp;     * @param snap the snapshot to render
+&nbsp;     * @param nick the local player&#39;s nickname
+&nbsp;     * @param done {@code true} if the player has already executed this round
+&nbsp;     */
+&nbsp;    public static void render(SnapshotMessage snap, String nick, boolean done) {
+<b class="nc">&nbsp;        System.out.println();</b>
+<b class="nc">&nbsp;        System.out.println(SEP);</b>
+<b class="nc">&nbsp;        System.out.printf(&quot;  Fase: %-18s  Round: %2d   Era: %s%n&quot;,</b>
+<b class="nc">&nbsp;                snap.getPhase(), snap.getRound(), snap.getEra());</b>
+<b class="nc">&nbsp;        System.out.println(SEP);</b>
+&nbsp;
+<b class="nc">&nbsp;        if (nick != null) {</b>
+<b class="nc">&nbsp;            String myTile = snap.getPlayers().stream()</b>
+<b class="nc">&nbsp;                    .filter(p -&gt; p.getId().equals(nick))</b>
+<b class="nc">&nbsp;                    .map(PlayerSnapshot::getSelectedTile)</b>
+<b class="nc">&nbsp;                    .findFirst().orElse(null);</b>
+&nbsp;
+<b class="nc">&nbsp;            if (&quot;PLACEMENT&quot;.equals(snap.getPhase()) &amp;&amp; &quot;-&quot;.equals(myTile)) {</b>
+&nbsp;                // My actual turn only if I am the first player still without a tile (sequential order).
+<b class="nc">&nbsp;                boolean myActualTurn = snap.getPlayers().stream()</b>
+<b class="nc">&nbsp;                        .filter(p -&gt; &quot;-&quot;.equals(p.getSelectedTile()))</b>
+<b class="nc">&nbsp;                        .findFirst().map(p -&gt; p.getId().equals(nick)).orElse(false);</b>
+<b class="nc">&nbsp;                if (myActualTurn) {</b>
+<b class="nc">&nbsp;                    String free = snap.getOfferTrack().stream()</b>
+<b class="nc">&nbsp;                            .filter(t -&gt; &quot;free&quot;.equals(t.getOccupant()))</b>
+<b class="nc">&nbsp;                            .map(TileSnapshot::getTileId)</b>
+<b class="nc">&nbsp;                            .collect(java.util.stream.Collectors.joining(&quot;  &quot;));</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;  *** IL TUO TURNO — piazza il totem: place &lt;tile&gt;   tessere libere: &quot; + free + &quot; ***&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println();</b>
+&nbsp;                }
+<b class="nc">&nbsp;            } else if (&quot;ACTION_RESOLUTION&quot;.equals(snap.getPhase()) &amp;&amp; myTile != null &amp;&amp; !&quot;-&quot;.equals(myTile) &amp;&amp; !done) {</b>
+<b class="nc">&nbsp;                System.out.println(&quot;  *** IL TUO TURNO — esegui: exec &quot; + tilePickDetail(myTile)</b>
+&nbsp;                        + &quot;   tessera: &quot; + myTile + &quot; ***&quot;);
+<b class="nc">&nbsp;                System.out.println();</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        System.out.println(&quot;  RIGA TOP:&quot;);</b>
+<b class="nc">&nbsp;        renderRow(snap.getTopRow());</b>
+&nbsp;
+<b class="nc">&nbsp;        if (&quot;PLACEMENT&quot;.equals(snap.getPhase()) &amp;&amp; nick != null) {</b>
+<b class="nc">&nbsp;            PlayerSnapshot expected = snap.getPlayers().stream()</b>
+<b class="nc">&nbsp;                    .filter(p -&gt; &quot;-&quot;.equals(p.getSelectedTile()))</b>
+<b class="nc">&nbsp;                    .findFirst().orElse(null);</b>
+<b class="nc">&nbsp;            if (expected != null) {</b>
+<b class="nc">&nbsp;                if (expected.getId().equals(nick)) {</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;  &gt;&gt;&gt; È IL TUO TURNO di piazzamento — scegli una tessera libera&quot;);</b>
+&nbsp;                } else {
+<b class="nc">&nbsp;                    System.out.println(&quot;  Ordine turno: aspetta — sta piazzando &quot; + expected.getId());</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        System.out.println();</b>
+<b class="nc">&nbsp;        System.out.println(&quot;  OFFER TRACK:   [tessera  pesca : occupante]&quot;);</b>
+<b class="nc">&nbsp;        renderOfferTrack(snap.getOfferTrack());</b>
+&nbsp;
+<b class="nc">&nbsp;        System.out.println();</b>
+<b class="nc">&nbsp;        System.out.println(&quot;  RIGA BOTTOM:&quot;);</b>
+<b class="nc">&nbsp;        renderRow(snap.getBottomRow());</b>
+&nbsp;
+<b class="nc">&nbsp;        System.out.println();</b>
+<b class="nc">&nbsp;        System.out.println(&quot;  GIOCATORI:&quot;);</b>
+<b class="nc">&nbsp;        for (PlayerSnapshot p : snap.getPlayers()) {</b>
+<b class="nc">&nbsp;            String arrow = nick != null &amp;&amp; nick.equals(p.getId()) ? &quot;→ &quot; : &quot;  &quot;;</b>
+<b class="nc">&nbsp;            System.out.printf(&quot;  %s%-12s  cibo=%-3d  pp=%-3d  tessera=%s%n&quot;,</b>
+<b class="nc">&nbsp;                    arrow, p.getId(), p.getFood(), p.getPrestigePoints(), p.getSelectedTile());</b>
+&nbsp;        }
+<b class="nc">&nbsp;        System.out.println(SEP);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static void renderRow(List&lt;SlotSnapshot&gt; slots) {
+<b class="nc">&nbsp;        if (slots.isEmpty()) { System.out.println(&quot;  (vuota)&quot;); return; }</b>
+<b class="nc">&nbsp;        StringBuilder sb = new StringBuilder(&quot;  &quot;);</b>
+<b class="nc">&nbsp;        for (SlotSnapshot slot : slots) {</b>
+<b class="nc">&nbsp;            sb.append(&quot;[&quot;).append(pad(formatSlot(slot), SLOT_W)).append(&quot;]&quot;);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        System.out.println(sb);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static void renderOfferTrack(List&lt;TileSnapshot&gt; tiles) {
+<b class="nc">&nbsp;        StringBuilder sb = new StringBuilder(&quot;  &quot;);</b>
+<b class="nc">&nbsp;        for (TileSnapshot tile : tiles) {</b>
+<b class="nc">&nbsp;            String occ = &quot;free&quot;.equals(tile.getOccupant()) ? &quot;----&quot; : tile.getOccupant();</b>
+<b class="nc">&nbsp;            String picks = tilePickInfo(tile.getTileId());</b>
+<b class="nc">&nbsp;            sb.append(&quot;[&quot;).append(tile.getTileId()).append(&quot; &quot;).append(pad(picks, 4))</b>
+<b class="nc">&nbsp;              .append(&quot;:&quot;).append(pad(occ, 6)).append(&quot;]&quot;);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        System.out.println(sb);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static String tilePickInfo(String tileId) {
+<b class="nc">&nbsp;        return switch (tileId) {</b>
+<b class="nc">&nbsp;            case &quot;A&quot; -&gt; &quot;-&quot;;</b>
+<b class="nc">&nbsp;            case &quot;B&quot; -&gt; &quot;1↓&quot;;</b>
+<b class="nc">&nbsp;            case &quot;C&quot; -&gt; &quot;1↑&quot;;</b>
+<b class="nc">&nbsp;            case &quot;D&quot; -&gt; &quot;2↓&quot;;</b>
+<b class="nc">&nbsp;            case &quot;E&quot; -&gt; &quot;1↑1↓&quot;;</b>
+<b class="nc">&nbsp;            case &quot;F&quot; -&gt; &quot;2↑&quot;;</b>
+<b class="nc">&nbsp;            case &quot;G&quot; -&gt; &quot;2↑1↓&quot;;</b>
+<b class="nc">&nbsp;            default  -&gt; &quot;?&quot;;</b>
+&nbsp;        };
+&nbsp;    }
+&nbsp;
+&nbsp;    private static String tilePickDetail(String tileId) {
+<b class="nc">&nbsp;        return switch (tileId) {</b>
+<b class="nc">&nbsp;            case &quot;A&quot; -&gt; &quot;(solo ordine di turno — nessuna carta)&quot;;</b>
+<b class="nc">&nbsp;            case &quot;B&quot; -&gt; &quot;BOTTOM:m  (1 carta da BOTTOM)&quot;;</b>
+<b class="nc">&nbsp;            case &quot;C&quot; -&gt; &quot;TOP:n  (1 carta da TOP)&quot;;</b>
+<b class="nc">&nbsp;            case &quot;D&quot; -&gt; &quot;BOTTOM:m  (2 carte da BOTTOM)&quot;;</b>
+<b class="nc">&nbsp;            case &quot;E&quot; -&gt; &quot;TOP:n BOTTOM:m  (1 da TOP + 1 da BOTTOM)&quot;;</b>
+<b class="nc">&nbsp;            case &quot;F&quot; -&gt; &quot;TOP:n  (2 carte da TOP)&quot;;</b>
+<b class="nc">&nbsp;            case &quot;G&quot; -&gt; &quot;TOP:n BOTTOM:m  (2 da TOP + 1 da BOTTOM)&quot;;</b>
+<b class="nc">&nbsp;            default  -&gt; &quot;[picks]&quot;;</b>
+&nbsp;        };
+&nbsp;    }
+&nbsp;    private static String formatSlot(SlotSnapshot slot) {
+<b class="nc">&nbsp;        if (&quot;EMPTY&quot;.equals(slot.getKind())) return &quot;EMPTY&quot;;</b>
+<b class="nc">&nbsp;        String prefix = slot.getKind().substring(0, Math.min(3, slot.getKind().length()));</b>
+<b class="nc">&nbsp;        String name   = slot.getName() == null ? &quot;&quot; : slot.getName();</b>
+<b class="nc">&nbsp;        if (name.length() &gt; 14) name = name.substring(0, 14);</b>
+<b class="nc">&nbsp;        return prefix + &quot; &quot; + name;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static String pad(String s, int width) {
+<b class="nc">&nbsp;        if (s.length() &gt;= width) return s.substring(0, width);</b>
+<b class="nc">&nbsp;        return s + &quot; &quot;.repeat(width - s.length());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

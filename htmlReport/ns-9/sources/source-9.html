@@ -1,0 +1,244 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TribeCardsPanel</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.panel</a>
+</div>
+
+<h1>Coverage Summary for Class: TribeCardsPanel (mesos.client.ui.panel)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TribeCardsPanel</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/40)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TribeCardsPanel$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/42)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.panel;
+&nbsp;
+&nbsp;import java.awt.Cursor;
+&nbsp;import java.awt.Dimension;
+&nbsp;import java.awt.Font;
+&nbsp;import java.awt.GridLayout;
+&nbsp;import java.awt.event.MouseAdapter;
+&nbsp;import java.awt.event.MouseEvent;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import javax.swing.Box;
+&nbsp;import javax.swing.BoxLayout;
+&nbsp;import javax.swing.JComponent;
+&nbsp;import javax.swing.JLabel;
+&nbsp;import javax.swing.JPanel;
+&nbsp;import javax.swing.border.EmptyBorder;
+&nbsp;import mesos.client.ui.model.GameSnapshot;
+&nbsp;import mesos.client.ui.resource.Theme;
+&nbsp;import mesos.client.ui.widget.CardComponent;
+&nbsp;import mesos.client.ui.widget.CardZoomOverlay;
+&nbsp;
+&nbsp;/**
+&nbsp; * REMOVABLE expand module: renders a player&#39;s acquired tribe cards as small
+&nbsp; * thumbnails (characters then buildings) via {@link CardComponent}. Built on
+&nbsp; * demand by {@link PlayerPanel} when expanded.
+&nbsp; *
+&nbsp; * &lt;p&gt;Deleting this class + the guarded block in {@code PlayerPanel} leaves the
+&nbsp; * always-visible counts bar fully working.
+&nbsp; */
+&nbsp;public final class TribeCardsPanel extends JPanel {
+&nbsp;
+&nbsp;    private static final int COLS = 4;
+&nbsp;
+<b class="nc">&nbsp;    public TribeCardsPanel(GameSnapshot.PlayerState player) {</b>
+<b class="nc">&nbsp;        setOpaque(false);</b>
+<b class="nc">&nbsp;        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));</b>
+<b class="nc">&nbsp;        setBorder(new EmptyBorder(Theme.scale(4), 0, Theme.scale(2), 0));</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;GameSnapshot.TribeCard&gt; chars = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        List&lt;GameSnapshot.TribeCard&gt; builds = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        if (player != null &amp;&amp; player.tribe != null) {</b>
+<b class="nc">&nbsp;            for (GameSnapshot.TribeCard c : player.tribe) {</b>
+<b class="nc">&nbsp;                if (c.kind == CardComponent.Kind.BUILDING) builds.add(c);</b>
+<b class="nc">&nbsp;                else chars.add(c);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (chars.isEmpty() &amp;&amp; builds.isEmpty()) {</b>
+<b class="nc">&nbsp;            add(label(&quot;Nessuna carta acquisita&quot;));</b>
+&nbsp;            return;
+&nbsp;        }
+<b class="nc">&nbsp;        if (!chars.isEmpty()) add(section(&quot;Personaggi&quot;, chars));</b>
+<b class="nc">&nbsp;        if (!builds.isEmpty()) {</b>
+<b class="nc">&nbsp;            if (!chars.isEmpty()) add(Box.createVerticalStrut(Theme.scale(4)));</b>
+<b class="nc">&nbsp;            add(section(&quot;Edifici&quot;, builds));</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private JComponent section(String title, List&lt;GameSnapshot.TribeCard&gt; cards) {
+<b class="nc">&nbsp;        JPanel box = new JPanel();</b>
+<b class="nc">&nbsp;        box.setOpaque(false);</b>
+<b class="nc">&nbsp;        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));</b>
+<b class="nc">&nbsp;        box.setAlignmentX(LEFT_ALIGNMENT);</b>
+<b class="nc">&nbsp;        box.add(label(title));</b>
+&nbsp;
+<b class="nc">&nbsp;        JPanel grid = new JPanel(new GridLayout(0, COLS, Theme.scale(3), Theme.scale(3)));</b>
+<b class="nc">&nbsp;        grid.setOpaque(false);</b>
+<b class="nc">&nbsp;        grid.setAlignmentX(LEFT_ALIGNMENT);</b>
+<b class="nc">&nbsp;        for (GameSnapshot.TribeCard c : cards) {</b>
+<b class="nc">&nbsp;            CardComponent cc = new CardComponent();</b>
+<b class="nc">&nbsp;            cc.setKind(c.kind);</b>
+<b class="nc">&nbsp;            cc.setLabel(c.name);</b>
+<b class="nc">&nbsp;            cc.setPreferredSize(new Dimension(Theme.scale(44), Theme.scale(62)));</b>
+<b class="nc">&nbsp;            cc.setMinimumSize(new Dimension(Theme.scale(28), Theme.scale(39)));</b>
+<b class="nc">&nbsp;            cc.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));</b>
+<b class="nc">&nbsp;            cc.addMouseListener(new MouseAdapter() {</b>
+&nbsp;                @Override public void mouseClicked(MouseEvent e) {
+<b class="nc">&nbsp;                    CardZoomOverlay.show(cc, c.kind, c.name);</b>
+&nbsp;                }
+&nbsp;            });
+<b class="nc">&nbsp;            grid.add(cc);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        box.add(grid);</b>
+<b class="nc">&nbsp;        return box;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private JLabel label(String s) {
+<b class="nc">&nbsp;        JLabel l = new JLabel(s);</b>
+<b class="nc">&nbsp;        l.setForeground(Theme.INK_SOFT);</b>
+<b class="nc">&nbsp;        l.setFont(new Font(&quot;Serif&quot;, Font.ITALIC, Theme.scale(11)));</b>
+<b class="nc">&nbsp;        l.setAlignmentX(LEFT_ALIGNMENT);</b>
+<b class="nc">&nbsp;        return l;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

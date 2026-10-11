@@ -1,0 +1,109 @@
+@startuml 01-architecture-overview
+' Component diagram: current architecture (Java serialization, multi-client TCP/RMI).
+' Updated after MVC client-server refactoring with serialized objects.
+
+skinparam componentStyle rectangle
+skinparam backgroundColor white
+skinparam ArrowColor #444444
+skinparam component {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+    FontSize 12
+}
+skinparam note {
+    BackgroundColor #FFE0E0
+    BorderColor #CC4444
+}
+skinparam package {
+    BackgroundColor #F0F8FF
+    BorderColor #336699
+}
+
+title MESOS — Overall Architecture (current state, branch test)
+
+package "CLIENT SIDE" {
+    [TuiClient] as TUI
+    [AutoPlayer\n(automated test)] as AUTO
+    note as GN
+        <<TODO>>
+        Swing GUI Client
+        (not yet implemented)
+    end note
+    note as RN
+        <<TODO>>
+        RMI Client
+        (not yet implemented)
+    end note
+}
+
+package "TRANSPORT" {
+    [TCP\n(ObjectInputStream/\nObjectOutputStream)] as TCP
+    [Java RMI\n(RemoteGameService)] as RMIT
+}
+
+package "SERVER SIDE" {
+    package "Accept + Handler" {
+        [ServerMain] as SM
+        [TcpClientHandler\n(1 thread/client)] as TCH
+        [RemoteGameServiceImpl] as RGSI
+    }
+
+package "Shared Queue" {
+        [BlockingQueue\nClientMessage] as BQ
+    }
+
+    package "Registry" {
+        [ServerRegistry\nnick → VirtualView] as SR
+        [TcpVirtualView] as TCV
+        [RmiVirtualView] as RMIVV
+    }
+
+    package "MVC Server" {
+        [ControllerWorker\n(1 thread, serialized)] as CW
+        [Controller] as CTRL
+        [Game / Model\n(pure, no network)] as GAME
+        [ModelListener → CallBack] as ML
+    }
+}
+
+TUI --right--> TCP : ClientMessage\n(serialized)
+AUTO --right--> TCP : ClientMessage\n(serialized)
+TCP --right--> TCH
+RGSI --up--> RMIT
+RMIT --up--> RN
+
+TCH --> BQ : queue.put(msg)
+RGSI --> BQ : queue.put(msg)
+
+BQ --> CW : queue.take()
+CW --> CTRL : msg.process(controller)
+CTRL --> GAME : mutate state
+GAME --> ML : PropertyChangeEvent
+ML --> SR : broadcast(\nSnapshotMessage.from(game))
+SR --> TCV : sendMessage()
+SR --> RMIVV : sendMessage()
+TCV --> TCP : ObjectOutputStream\n.writeObject()
+RMIVV --> RMIT : callback\n.onServerMessage()
+
+TCH --> SR : tryRegister / handleDisconnection
+RGSI --> SR : tryRegister
+SM --> TCH : spawns thread\nfor each accept()
+SM --> CW : starts thread
+SM --> RGSI : creates + binds\nRMI registry
+
+note bottom of GAME
+  The Model has NO dependencies
+  on network or Controller.
+  Communicates only via
+  PropertyChangeEvent.
+end note
+
+note right of BQ
+  The queue decouples
+  TcpClientHandler (multi-thread)
+  from ControllerWorker (single-thread).
+  Ensures serialization of
+  Controller access.
+end note
+
+@enduml

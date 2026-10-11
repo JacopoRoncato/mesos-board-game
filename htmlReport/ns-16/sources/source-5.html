@@ -1,0 +1,147 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > RmiVirtualView</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.server</a>
+</div>
+
+<h1>Coverage Summary for Class: RmiVirtualView (mesos.server)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">RmiVirtualView</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.server;
+&nbsp;
+&nbsp;import java.rmi.RemoteException;
+&nbsp;import mesos.client.RemoteGameCallback;
+&nbsp;import mesos.network.server.ServerMessage;
+&nbsp;
+&nbsp;/**
+&nbsp; * RMI implementation of {@link VirtualView}.
+&nbsp; * Calls the client-side {@link RemoteGameCallback} stub to push messages back.
+&nbsp; * On {@link RemoteException}, triggers disconnection handling so the registry is cleaned up.
+&nbsp; */
+&nbsp;public class RmiVirtualView implements VirtualView {
+&nbsp;
+&nbsp;    private final RemoteGameCallback callback;
+&nbsp;    private final String             nick;
+&nbsp;    private final ServerRegistry     registry;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates an RMI virtual view.
+&nbsp;     *
+&nbsp;     * @param callback the client-side callback stub
+&nbsp;     * @param nick     the player&#39;s nickname
+&nbsp;     * @param registry the server registry (needed for disconnection handling)
+&nbsp;     */
+<b class="nc">&nbsp;    public RmiVirtualView(RemoteGameCallback callback, String nick, ServerRegistry registry) {</b>
+<b class="nc">&nbsp;        this.callback = callback;</b>
+<b class="nc">&nbsp;        this.nick     = nick;</b>
+<b class="nc">&nbsp;        this.registry = registry;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void sendMessage(ServerMessage message) {
+&nbsp;        try {
+<b class="nc">&nbsp;            callback.onServerMessage(message);</b>
+&nbsp;        } catch (RemoteException e) {
+<b class="nc">&nbsp;            System.err.println(&quot;[rmi] client &quot; + nick + &quot; disconnected: &quot; + e.getMessage());</b>
+<b class="nc">&nbsp;            registry.handleDisconnection(nick);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+<b class="nc">&nbsp;    public String getNick() { return nick; }</b>
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,150 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TurnOrderPlacementEffect</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.effects</a>
+</div>
+
+<h1>Coverage Summary for Class: TurnOrderPlacementEffect (mesos.effects)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TurnOrderPlacementEffect</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.effects;
+&nbsp;
+&nbsp;import mesos.order.TurnOrderSpace;
+&nbsp;import mesos.player.Player;
+&nbsp;
+&nbsp;/**
+&nbsp; * Building effect that grants extra food when the player places their totem
+&nbsp; * on a turn-order space that has a food bonus (and is not the penalty space).
+&nbsp; */
+&nbsp;public class TurnOrderPlacementEffect extends BuildingEffect {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private final int extraFoodIfBonusSpace;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a turn-order placement effect.
+&nbsp;     *
+&nbsp;     * @param extraFoodIfBonusSpace extra food granted when the player occupies a bonus space
+&nbsp;     */
+<b class="fc">&nbsp;    public TurnOrderPlacementEffect(int extraFoodIfBonusSpace) {</b>
+<b class="fc">&nbsp;        this.extraFoodIfBonusSpace = extraFoodIfBonusSpace;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void onTurnOrderPlaced(Player owner, TurnOrderSpace space) {
+<b class="fc">&nbsp;        if (space != null &amp;&amp; space.getFoodBonus() &gt; 0 &amp;&amp; !space.isLastSpace()) {</b>
+<b class="fc">&nbsp;            owner.gainFood(extraFoodIfBonusSpace);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public String getDescription() {
+<b class="fc">&nbsp;        return &quot;TURN_ORDER&quot;;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

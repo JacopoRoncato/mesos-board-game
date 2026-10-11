@@ -1,0 +1,198 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > CountPanel</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.panel</a>
+</div>
+
+<h1>Coverage Summary for Class: CountPanel (mesos.client.ui.panel)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">CountPanel</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/34)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.panel;
+&nbsp;
+&nbsp;import java.awt.Color;
+&nbsp;import java.awt.Dimension;
+&nbsp;import java.awt.FlowLayout;
+&nbsp;import java.awt.Font;
+&nbsp;import java.awt.Graphics;
+&nbsp;import java.awt.Graphics2D;
+&nbsp;import java.awt.GridBagLayout;
+&nbsp;import java.awt.LinearGradientPaint;
+&nbsp;import java.util.function.IntConsumer;
+&nbsp;import javax.swing.BorderFactory;
+&nbsp;import javax.swing.Box;
+&nbsp;import javax.swing.BoxLayout;
+&nbsp;import javax.swing.JButton;
+&nbsp;import javax.swing.JLabel;
+&nbsp;import javax.swing.JPanel;
+&nbsp;import javax.swing.SwingConstants;
+&nbsp;import mesos.client.ui.resource.Theme;
+&nbsp;
+&nbsp;/**
+&nbsp; * Lobby step shown to the first player: pick how many players (2-5) with big
+&nbsp; * buttons, on the warm MESOS gradient. Replaces the old JOptionPane dropdown so
+&nbsp; * the whole lobby is one cohesive flow. View-only.
+&nbsp; */
+&nbsp;public final class CountPanel extends JPanel {
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Constructs a CountPanel.
+&nbsp;     *
+&nbsp;     * @param onCount called with the chosen player count (2–5) when a button is pressed
+&nbsp;     */
+<b class="nc">&nbsp;    public CountPanel(IntConsumer onCount) {</b>
+<b class="nc">&nbsp;        setLayout(new GridBagLayout());</b>
+<b class="nc">&nbsp;        setOpaque(true);</b>
+&nbsp;
+<b class="nc">&nbsp;        JPanel col = new JPanel();</b>
+<b class="nc">&nbsp;        col.setOpaque(false);</b>
+<b class="nc">&nbsp;        col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));</b>
+&nbsp;
+<b class="nc">&nbsp;        JLabel title = new JLabel(&quot;Quanti giocatori?&quot;, SwingConstants.CENTER);</b>
+<b class="nc">&nbsp;        title.setFont(new Font(&quot;Serif&quot;, Font.BOLD, Theme.scale(30)));</b>
+<b class="nc">&nbsp;        title.setForeground(Theme.CREAM);</b>
+<b class="nc">&nbsp;        title.setAlignmentX(CENTER_ALIGNMENT);</b>
+<b class="nc">&nbsp;        col.add(title);</b>
+<b class="nc">&nbsp;        col.add(Box.createVerticalStrut(Theme.scale(28)));</b>
+&nbsp;
+<b class="nc">&nbsp;        JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, Theme.scale(18), 0));</b>
+<b class="nc">&nbsp;        row.setOpaque(false);</b>
+<b class="nc">&nbsp;        for (int n = 2; n &lt;= 5; n++) {</b>
+<b class="nc">&nbsp;            row.add(countButton(n, onCount));</b>
+&nbsp;        }
+<b class="nc">&nbsp;        row.setAlignmentX(CENTER_ALIGNMENT);</b>
+<b class="nc">&nbsp;        col.add(row);</b>
+&nbsp;
+<b class="nc">&nbsp;        add(col);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static JButton countButton(int n, IntConsumer onCount) {
+<b class="nc">&nbsp;        JButton b = new JButton(String.valueOf(n));</b>
+<b class="nc">&nbsp;        b.setFont(new Font(&quot;Serif&quot;, Font.BOLD, Theme.scale(26)));</b>
+<b class="nc">&nbsp;        b.setPreferredSize(new Dimension(Theme.scale(72), Theme.scale(86)));</b>
+<b class="nc">&nbsp;        b.setBackground(Theme.CREAM);</b>
+<b class="nc">&nbsp;        b.setForeground(Theme.INK);</b>
+<b class="nc">&nbsp;        b.setFocusPainted(false);</b>
+<b class="nc">&nbsp;        b.setBorder(BorderFactory.createLineBorder(Theme.INK, 3));</b>
+<b class="nc">&nbsp;        b.addActionListener(e -&gt; onCount.accept(n));</b>
+<b class="nc">&nbsp;        return b;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    protected void paintComponent(Graphics g) {
+<b class="nc">&nbsp;        super.paintComponent(g);</b>
+<b class="nc">&nbsp;        Graphics2D g2 = (Graphics2D) g.create();</b>
+<b class="nc">&nbsp;        float h = Math.max(1f, getHeight());</b>
+<b class="nc">&nbsp;        g2.setPaint(new LinearGradientPaint(0, 0, 0, h,</b>
+&nbsp;                new float[]{0f, 0.55f, 1f},
+&nbsp;                new Color[]{Theme.ORANGE, Theme.CORAL, Theme.BRICK}));
+<b class="nc">&nbsp;        g2.fillRect(0, 0, getWidth(), getHeight());</b>
+<b class="nc">&nbsp;        g2.dispose();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

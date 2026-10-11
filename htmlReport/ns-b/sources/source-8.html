@@ -1,0 +1,284 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ResourceCounter</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.widget</a>
+</div>
+
+<h1>Coverage Summary for Class: ResourceCounter (mesos.client.ui.widget)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ResourceCounter</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/40)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/82)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.widget;
+&nbsp;
+&nbsp;import java.awt.AlphaComposite;
+&nbsp;import java.awt.Color;
+&nbsp;import java.awt.Container;
+&nbsp;import java.awt.Dimension;
+&nbsp;import java.awt.Font;
+&nbsp;import java.awt.FontMetrics;
+&nbsp;import java.awt.Graphics;
+&nbsp;import java.awt.Graphics2D;
+&nbsp;import java.awt.RenderingHints;
+&nbsp;import java.awt.image.BufferedImage;
+&nbsp;import java.io.IOException;
+&nbsp;import javax.imageio.ImageIO;
+&nbsp;import javax.swing.JComponent;
+&nbsp;import mesos.client.ui.resource.Theme;
+&nbsp;
+&nbsp;/**
+&nbsp; * Resource counter: draws a token image (food or PP) with the numeric value
+&nbsp; * centered below it. Auto-detects the bounding box of non-transparent pixels
+&nbsp; * so the visible content is always centered regardless of asymmetric padding
+&nbsp; * in the source PNG.
+&nbsp; */
+&nbsp;public final class ResourceCounter extends JComponent {
+&nbsp;
+&nbsp;    private final String imagePath;
+&nbsp;    private BufferedImage image; // always TYPE_INT_ARGB after load
+&nbsp;    private int[] contentBounds; // [minX, minY, maxX, maxY] in image pixels
+&nbsp;    private int value;
+&nbsp;
+<b class="nc">&nbsp;    public ResourceCounter(String imagePath, int value) {</b>
+<b class="nc">&nbsp;        this.imagePath = imagePath;</b>
+<b class="nc">&nbsp;        this.value = value;</b>
+<b class="nc">&nbsp;        setOpaque(false);</b>
+<b class="nc">&nbsp;        setPreferredSize(new Dimension(Theme.scale(56), Theme.scale(76)));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setValue(int v) {
+<b class="nc">&nbsp;        if (v == value) return;</b>
+<b class="nc">&nbsp;        value = v;</b>
+<b class="nc">&nbsp;        repaint();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    protected void paintComponent(Graphics g) {
+<b class="nc">&nbsp;        super.paintComponent(g);</b>
+&nbsp;
+&nbsp;        // Fill with nearest opaque ancestor background so transparent PNG
+&nbsp;        // pixels show the correct colour (Swing double-buffering may not
+&nbsp;        // propagate the parent background reliably for non-opaque components).
+<b class="nc">&nbsp;        Color bg = nearestOpaqueBackground();</b>
+<b class="nc">&nbsp;        if (bg != null) {</b>
+<b class="nc">&nbsp;            g.setColor(bg);</b>
+<b class="nc">&nbsp;            g.fillRect(0, 0, getWidth(), getHeight());</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (image == null) loadImage();</b>
+<b class="nc">&nbsp;        Graphics2D g2 = (Graphics2D) g.create();</b>
+<b class="nc">&nbsp;        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,</b>
+&nbsp;                            RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+<b class="nc">&nbsp;        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,</b>
+&nbsp;                            RenderingHints.VALUE_ANTIALIAS_ON);
+&nbsp;
+<b class="nc">&nbsp;        int w = getWidth();</b>
+<b class="nc">&nbsp;        int h = getHeight();</b>
+<b class="nc">&nbsp;        Font numFont = new Font(&quot;Serif&quot;, Font.BOLD, Theme.scale(16));</b>
+<b class="nc">&nbsp;        g2.setFont(numFont);</b>
+<b class="nc">&nbsp;        FontMetrics fm = g2.getFontMetrics();</b>
+<b class="nc">&nbsp;        int numH = fm.getAscent() + fm.getDescent();</b>
+<b class="nc">&nbsp;        int gap = 4;</b>
+<b class="nc">&nbsp;        int imgSize = h - numH - gap;</b>
+<b class="nc">&nbsp;        if (imgSize &lt; 8) imgSize = 8;</b>
+&nbsp;
+<b class="nc">&nbsp;        if (image != null &amp;&amp; contentBounds != null) {</b>
+<b class="nc">&nbsp;            int cMinX = contentBounds[0], cMinY = contentBounds[1];</b>
+<b class="nc">&nbsp;            int cMaxX = contentBounds[2], cMaxY = contentBounds[3];</b>
+<b class="nc">&nbsp;            int contentW = cMaxX - cMinX + 1;</b>
+<b class="nc">&nbsp;            int contentH = cMaxY - cMinY + 1;</b>
+&nbsp;
+&nbsp;            // FIT (max): preserve the token&#39;s natural shape and aspect — the
+&nbsp;            // prestige piece stays octagonal and the food token stays a disc, and
+&nbsp;            // the whole token is shown. No circular slot/outline behind it, so a
+&nbsp;            // non-circular token never leaves a dark ring showing at its edges.
+<b class="nc">&nbsp;            double scale = (double) imgSize / Math.max(contentW, contentH);</b>
+<b class="nc">&nbsp;            int scaledW = (int) (image.getWidth()  * scale);</b>
+<b class="nc">&nbsp;            int scaledH = (int) (image.getHeight() * scale);</b>
+&nbsp;
+<b class="nc">&nbsp;            double contentCX = (cMinX + cMaxX) / 2.0 * scale;</b>
+<b class="nc">&nbsp;            double contentCY = (cMinY + cMaxY) / 2.0 * scale;</b>
+&nbsp;
+<b class="nc">&nbsp;            int drawX = (int) (w / 2.0 - contentCX);</b>
+<b class="nc">&nbsp;            int drawY = (int) (imgSize / 2.0 - contentCY);</b>
+&nbsp;
+&nbsp;            // Explicit SRC_OVER so alpha channel of the ARGB image is honoured.
+<b class="nc">&nbsp;            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER));</b>
+<b class="nc">&nbsp;            g2.drawImage(image, drawX, drawY, scaledW, scaledH, null);</b>
+&nbsp;        } else {
+&nbsp;            // Fallback when the token PNG is missing/unreadable: a neutral
+&nbsp;            // placeholder disc in the icon box, so the counter never collapses
+&nbsp;            // to a bare number (which would silently hide a broken asset path).
+<b class="nc">&nbsp;            int d = Math.max(8, Math.min(w, imgSize));</b>
+<b class="nc">&nbsp;            int ox = (w - d) / 2;</b>
+<b class="nc">&nbsp;            int oy = (imgSize - d) / 2;</b>
+<b class="nc">&nbsp;            g2.setColor(Theme.BG_STONE);</b>
+<b class="nc">&nbsp;            g2.fillOval(ox, oy, d, d);</b>
+<b class="nc">&nbsp;            g2.setColor(Theme.INK);</b>
+<b class="nc">&nbsp;            g2.drawOval(ox, oy, d, d);</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String text = String.valueOf(value);</b>
+<b class="nc">&nbsp;        int tx = (w - fm.stringWidth(text)) / 2;</b>
+<b class="nc">&nbsp;        int ty = imgSize + gap + fm.getAscent();</b>
+<b class="nc">&nbsp;        g2.setColor(Theme.INK);</b>
+<b class="nc">&nbsp;        g2.drawString(text, tx, ty);</b>
+&nbsp;
+<b class="nc">&nbsp;        g2.dispose();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private Color nearestOpaqueBackground() {
+<b class="nc">&nbsp;        Container c = getParent();</b>
+<b class="nc">&nbsp;        while (c != null &amp;&amp; !c.isOpaque()) c = c.getParent();</b>
+<b class="nc">&nbsp;        return (c != null) ? c.getBackground() : Theme.CREAM;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void loadImage() {
+<b class="nc">&nbsp;        try (var in = ResourceCounter.class.getResourceAsStream(imagePath)) {</b>
+<b class="nc">&nbsp;            if (in == null) return;</b>
+<b class="nc">&nbsp;            BufferedImage raw = ImageIO.read(in);</b>
+<b class="nc">&nbsp;            if (raw == null) return;</b>
+&nbsp;            // Force ARGB so the alpha channel is always present regardless of
+&nbsp;            // how the PNG was encoded (some decoders return TYPE_INT_RGB).
+<b class="nc">&nbsp;            image = toArgb(raw);</b>
+<b class="nc">&nbsp;            computeContentBounds();</b>
+&nbsp;        } catch (IOException ignored) {}
+&nbsp;    }
+&nbsp;
+&nbsp;    private static BufferedImage toArgb(BufferedImage src) {
+<b class="nc">&nbsp;        if (src.getType() == BufferedImage.TYPE_INT_ARGB) return src;</b>
+<b class="nc">&nbsp;        BufferedImage out = new BufferedImage(src.getWidth(), src.getHeight(),</b>
+&nbsp;                                              BufferedImage.TYPE_INT_ARGB);
+<b class="nc">&nbsp;        Graphics2D g = out.createGraphics();</b>
+<b class="nc">&nbsp;        g.setComposite(AlphaComposite.Src);</b>
+<b class="nc">&nbsp;        g.drawImage(src, 0, 0, null);</b>
+<b class="nc">&nbsp;        g.dispose();</b>
+<b class="nc">&nbsp;        return out;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // Scans all pixels; finds the bounding box of those with alpha &gt; 10.
+&nbsp;    private void computeContentBounds() {
+<b class="nc">&nbsp;        int iw = image.getWidth();</b>
+<b class="nc">&nbsp;        int ih = image.getHeight();</b>
+<b class="nc">&nbsp;        int minX = iw, minY = ih, maxX = 0, maxY = 0;</b>
+<b class="nc">&nbsp;        for (int y = 0; y &lt; ih; y++) {</b>
+<b class="nc">&nbsp;            for (int x = 0; x &lt; iw; x++) {</b>
+<b class="nc">&nbsp;                if (((image.getRGB(x, y) &gt;&gt; 24) &amp; 0xFF) &gt; 10) {</b>
+<b class="nc">&nbsp;                    if (x &lt; minX) minX = x;</b>
+<b class="nc">&nbsp;                    if (x &gt; maxX) maxX = x;</b>
+<b class="nc">&nbsp;                    if (y &lt; minY) minY = y;</b>
+<b class="nc">&nbsp;                    if (y &gt; maxY) maxY = y;</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        contentBounds = (maxX &gt;= minX)</b>
+<b class="nc">&nbsp;                ? new int[]{minX, minY, maxX, maxY}</b>
+<b class="nc">&nbsp;                : new int[]{0, 0, iw - 1, ih - 1};</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

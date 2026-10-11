@@ -1,0 +1,203 @@
+@startuml 14-sequence-disconnection
+' Sequence diagram: client disconnection handling (TCP and RMI) + heartbeat/watchdog.
+' Updated after:
+'   eecf3ea — handleDisconnection() is now idempotent (AtomicBoolean terminated);
+'             nullifies controller and clears views; TcpTransport notifies client via ErrMessage
+'   803cd15 — RmiTransport.send() catches RemoteException → forwards ErrMessage
+'   (heartbeat) — ServerRegistry.startHeartbeat() every 2s; TcpVirtualView calls
+'                 handleDisconnection on IOException; TuiClient watchdog 6s timeout
+
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam sequenceParticipant {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam note {
+    BackgroundColor #FFF3CD
+}
+
+title MESOS — Client Disconnection, Heartbeat, and Watchdog
+
+== Heartbeat — normal operation ==
+
+participant "heartbeat thread\n(ServerRegistry)" as HB
+participant "TcpVirtualView\n[alice]" as TVV
+actor "TuiClient\n(alice)" as ALICE_N
+participant "watchdog thread\n(TuiClient)" as WD
+
+loop every 2 seconds
+    HB -> HB : Thread.sleep(2_000)
+    HB -> TVV : broadcast(HeartbeatMessage)
+    TVV -> ALICE_N : ObjectOutputStream.writeObject(hb)
+end
+
+ALICE_N -> ALICE_N : onMessage(HeartbeatMessage)\n→ lastMsg[0] = now\n→ return  [discarded]
+note right of ALICE_N
+    Every incoming message (including
+    HeartbeatMessage) resets lastMsg[0].
+    HeartbeatMessage is otherwise ignored.
+end note
+
+WD -> WD : Thread.sleep(2_000)
+WD -> WD : now − lastMsg[0] ≤ 6_000 ms → OK
+
+== Heartbeat — detects dead TCP client (bob crashes silently) ==
+
+participant "heartbeat thread\n(ServerRegistry)" as HB2
+participant "TcpVirtualView\n[bob]" as TVV_B
+participant "ServerRegistry" as SR_HB
+participant "VirtualView\n[alice]" as VV_HB
+actor "TuiClient\n(alice)" as ALICE_HB
+
+HB2 -> HB2 : Thread.sleep(2_000)
+HB2 -> TVV_B : broadcast(HeartbeatMessage)
+activate TVV_B
+TVV_B -> TVV_B : synchronized(out)\n  out.writeObject(hb)\n  → catch IOException
+note right of TVV_B
+    Bob's socket is closed/unreachable.
+    IOException inside synchronized(out)
+    triggers handleDisconnection directly.
+end note
+TVV_B -> SR_HB : handleDisconnection("bob")
+activate SR_HB
+SR_HB -> SR_HB : terminated.compareAndSet(false, true)
+SR_HB -> SR_HB : views.remove("bob")
+SR_HB -> SR_HB : broadcast(ErrMessage("PLAYER_DISCONNECTED bob"))
+SR_HB -> VV_HB : sendMessage(ErrMessage)
+VV_HB -> ALICE_HB : ObjectOutputStream.writeObject(errMsg)
+SR_HB -> SR_HB : controllerRef.set(null)
+SR_HB -> SR_HB : views.clear()
+SR_HB -> SR_HB : heartbeatThread.interrupt()
+deactivate SR_HB
+deactivate TVV_B
+
+== Watchdog — client detects dead server (no heartbeat for 6 s) ==
+
+actor "TuiClient\n(alice)" as ALICE_WD
+participant "watchdog thread\n(TuiClient)" as WD2
+participant "TcpTransport\n[alice]" as TT
+
+note over ALICE_WD
+    Server has crashed or become unreachable.
+    No message (including HeartbeatMessage)
+    arrives for more than 6 seconds.
+end note
+
+WD2 -> WD2 : Thread.sleep(2_000)
+WD2 -> WD2 : now − lastMsg[0] > 6_000 ms\n(≈ 3 missed heartbeats)
+WD2 -> ALICE_WD : print "[game over] Server disconnected."
+WD2 -> TT : transport.close()
+WD2 -> WD2 : System.exit(0)
+
+note right of WD2
+    Same path for both TCP and RMI clients:
+    the watchdog lives in TuiClient,
+    not in TcpTransport or RmiTransport.
+end note
+
+== Note: heartbeats during handshake ==
+
+note over TT
+    During the synchronous handshake phase
+    (before the reader thread starts),
+    TcpTransport.readHandshake() skips
+    HeartbeatMessages in a do-while loop,
+    so they do not interfere with the
+    expected OkMessage / InfoMessage sequence.
+end note
+
+== TCP path — server-side detection (socket close on read) ==
+
+actor "TCP Client\n(bob — disconnected)" as BOB
+actor "TuiClient\n(alice — still connected)" as ALICE
+participant "TcpClientHandler\n[bob]" as TCH
+participant "TcpTransport\n[alice reader]" as AT
+participant "ServerRegistry" as SR
+participant "VirtualView\n[alice]" as VV
+
+BOB ->x TCH : [socket closed or\nnetwork failure]
+activate TCH
+TCH -> TCH : catch IOException
+TCH -> SR : handleDisconnection("bob")
+activate SR
+
+SR -> SR : terminated.compareAndSet(false, true)
+note right of SR
+    Idempotent: if already called
+    (e.g. heartbeat and TcpClientHandler
+    both fire at the same instant)
+    the second call is a no-op.
+end note
+
+SR -> SR : views.remove("bob")
+SR -> SR : broadcast(\n  ErrMessage("PLAYER_DISCONNECTED bob"))
+SR -> VV : sendMessage(ErrMessage)
+activate VV
+VV -> ALICE : ObjectOutputStream\n.writeObject(errMsg)
+deactivate VV
+
+SR -> SR : controllerRef.set(null)
+note right of SR
+    Nullifying the controller prevents
+    further commands from being processed.
+end note
+SR -> SR : views.clear()
+SR -> SR : heartbeatThread.interrupt()
+deactivate SR
+
+TCH -> TCH : [thread terminates]
+deactivate TCH
+
+== TCP path — client-side reaction (alice) ==
+
+ALICE -> AT : [reader thread reads ErrMessage]
+AT -> AT : onMessage.accept(\n  ErrMessage("PLAYER_DISCONNECTED bob"))
+AT -> ALICE : [TuiClient callback]
+ALICE -> ALICE : print "Game over —\nplayer disconnected"
+ALICE -> ALICE : System.exit(0)
+
+== TCP path — client detects own connection loss ==
+
+note over AT
+    If alice's own TCP connection drops:
+    TcpTransport reader thread catches IOException →
+    forwards ErrMessage("PLAYER_DISCONNECTED (connection lost)")
+    → same System.exit(0) path.
+end note
+
+== RMI path — server detects client gone ==
+
+participant "RmiVirtualView\n[carol]" as RVVV
+participant "RmiTransport\n[carol]" as RT
+
+SR -> RVVV : sendMessage(ErrMessage)
+activate RVVV
+RVVV -> RT : callback.onServerMessage(errMsg)
+note right of RVVV
+    If callback.onServerMessage() throws
+    RemoteException (carol already disconnected):
+    RmiVirtualView calls
+    registry.handleDisconnection("carol").
+    handleDisconnection() is idempotent —
+    the second invocation is a no-op.
+end note
+deactivate RVVV
+
+== RMI path — client detects own connection loss on send ==
+
+actor "RMI Client\n(carol)" as CAROL
+
+CAROL -> RT : send(CommandMessage)
+RT -> RT : service.sendMessage(...)\ncatch RemoteException
+RT -> RT : onMessage.accept(\n  ErrMessage("PLAYER_DISCONNECTED\n   (connection lost)"))
+CAROL -> CAROL : System.exit(0)
+note right of CAROL
+    RMI clients detect network loss
+    on the next outbound send(),
+    not immediately on drop.
+    The watchdog also catches this
+    if no heartbeat arrives for 6 s.
+end note
+
+@enduml

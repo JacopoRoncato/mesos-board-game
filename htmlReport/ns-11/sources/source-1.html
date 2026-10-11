@@ -1,0 +1,138 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ClientMessage</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.network.client</a>
+</div>
+
+<h1>Coverage Summary for Class: ClientMessage (mesos.network.client)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ClientMessage</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.network.client;
+&nbsp;
+&nbsp;import java.io.Serializable;
+&nbsp;import mesos.controller.Controller;
+&nbsp;import mesos.server.ServerRegistry;
+&nbsp;import mesos.server.VirtualView;
+&nbsp;
+&nbsp;/**
+&nbsp; * Base class for all messages sent from client to server.
+&nbsp; *
+&nbsp; * Transport layer (TcpClientHandler / RemoteGameServiceImpl) sets sender and
+&nbsp; * registry before calling process(). The ControllerWorker then calls process()
+&nbsp; * so that the message dispatches itself to the correct Controller method
+&nbsp; * (visitor / double-dispatch pattern).
+&nbsp; */
+<b class="nc">&nbsp;public abstract class ClientMessage implements Serializable {</b>
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;
+&nbsp;    protected transient VirtualView    sender;
+&nbsp;    protected transient ServerRegistry registry;
+&nbsp;
+<b class="nc">&nbsp;    public void setSender(VirtualView v)       { this.sender   = v; }</b>
+<b class="nc">&nbsp;    public void setRegistry(ServerRegistry r)  { this.registry = r; }</b>
+&nbsp;
+<b class="nc">&nbsp;    public VirtualView    getSender()   { return sender; }</b>
+<b class="nc">&nbsp;    public ServerRegistry getRegistry() { return registry; }</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Double-dispatch entry point called by ControllerWorker.
+&nbsp;     * Each subclass calls the appropriate method on the controller.
+&nbsp;     * {@code controller} may be null if StartMessage has not yet been processed.
+&nbsp;     */
+&nbsp;    public abstract void process(Controller controller);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

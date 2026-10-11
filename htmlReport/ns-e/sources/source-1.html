@@ -1,0 +1,178 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > BuildingEffect</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.effects</a>
+</div>
+
+<h1>Coverage Summary for Class: BuildingEffect (mesos.effects)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">BuildingEffect</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (13/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (13/13)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.effects;
+&nbsp;
+&nbsp;import java.io.Serializable;
+&nbsp;import mesos.board.Board;
+&nbsp;import mesos.cards.characters.CharacterCard;
+&nbsp;import mesos.enums.CharacterType;
+&nbsp;import mesos.enums.EventType;
+&nbsp;import mesos.order.TurnOrderSpace;
+&nbsp;import mesos.player.Player;
+&nbsp;
+&nbsp;/**
+&nbsp; * Strategy base class for all building card effects.
+&nbsp; * All hook methods are no-ops and all query methods return neutral defaults,
+&nbsp; * so concrete subclasses only need to override what they actually change.
+&nbsp; */
+<b class="fc">&nbsp;public abstract class BuildingEffect implements Serializable {</b>
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;
+&nbsp;    /** Called when the building is acquired by {@code owner}. */
+&nbsp;    public void onAcquire(Player owner) {
+<b class="fc">&nbsp;    }</b>
+&nbsp;
+&nbsp;    /** Called when a character is added to {@code owner}&#39;s tribe. */
+&nbsp;    public void onCharacterAdded(Player owner, CharacterCard character) {
+<b class="fc">&nbsp;    }</b>
+&nbsp;
+&nbsp;    /** Called when {@code owner} places their totem on a turn-order space. */
+&nbsp;    public void onTurnOrderPlaced(Player owner, TurnOrderSpace space) {
+<b class="fc">&nbsp;    }</b>
+&nbsp;
+&nbsp;    /** Called at the end of the action phase for {@code owner}. */
+&nbsp;    public void onEndOfActionPhase(Player owner, Board board) {
+<b class="fc">&nbsp;    }</b>
+&nbsp;
+&nbsp;    /** Returns any extra sustenance discount this effect provides. Defaults to {@code 0}. */
+&nbsp;    public int getExtraSustenanceDiscount(Player owner) {
+<b class="fc">&nbsp;        return 0;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns any additional shaman icons this effect grants. Defaults to {@code 0}. */
+&nbsp;    public int getAdditionalShamanIcons(Player owner) {
+<b class="fc">&nbsp;        return 0;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns {@code true} if this effect protects the owner from the shamanic penalty. */
+&nbsp;    public boolean ignoresShamanicPenalty(Player owner) {
+<b class="fc">&nbsp;        return false;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns {@code true} if this effect doubles the owner&#39;s shamanic reward. */
+&nbsp;    public boolean doublesShamanicReward(Player owner) {
+<b class="fc">&nbsp;        return false;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns extra food per qualifying character for the given event type. Defaults to {@code 0}. */
+&nbsp;    public int getExtraFoodPerCharacterForEvent(EventType eventType, CharacterType characterType, Player owner) {
+<b class="fc">&nbsp;        return 0;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns extra prestige per qualifying character for the given event type. Defaults to {@code 0}. */
+&nbsp;    public int getExtraPrestigePerCharacterForEvent(EventType eventType, CharacterType characterType, Player owner) {
+<b class="fc">&nbsp;        return 0;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the end-game prestige bonus provided by this effect. Defaults to {@code 0}. */
+&nbsp;    public int getEndGameBonus(Player owner) {
+<b class="fc">&nbsp;        return 0;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns a short description of this effect (used for debugging and snapshots). */
+&nbsp;    public String getDescription() {
+<b class="fc">&nbsp;        return &quot;&quot;;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

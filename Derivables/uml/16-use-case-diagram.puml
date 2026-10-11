@@ -1,0 +1,74 @@
+@startuml 16-use-case-diagram
+
+skinparam usecase {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam actor {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+skinparam note {
+    BackgroundColor #FFE0E0
+    BorderColor #CC4444
+}
+skinparam shadowing false
+skinparam backgroundColor white
+
+title MESOS — Use Case Diagram
+
+left to right direction
+
+actor "Player" as Player
+actor "First Player" as FirstPlayer
+
+Player <|-- FirstPlayer
+
+rectangle "MESOS System" {
+    usecase "Connect to Server" as UC1
+    usecase "Set Number\nof Players" as UC2
+    usecase "Start Game" as UC3
+    usecase "Place Totem" as UC4
+    usecase "Pick a Card" as UC5
+    usecase "Receive Board\nState Snapshot" as UC6
+    usecase "Disconnect" as UC7
+}
+
+Player --> UC1
+Player --> UC3
+Player --> UC4
+Player --> UC5
+Player --> UC6
+Player --> UC7
+FirstPlayer --> UC2
+
+UC2 ..> UC1 : <<extend>>\n{first client}
+
+note right of UC1
+  Sends LoginMessage(nick, numPlayers)
+  via TCP or RMI
+end note
+
+note right of UC2
+  Only the first client to connect.
+  Sets expected numPlayers (2-5).
+  Subsequent clients send numPlayers = 0.
+end note
+
+note right of UC4
+  Phase: PLACEMENT
+  CommandMessage("PLACE <nick> <tileId>")
+end note
+
+note right of UC5
+  Phase: ACTION_RESOLUTION
+  CommandMessage("EXECUTE <nick> <slot>")
+end note
+
+note right of UC6
+  Passive — the server broadcasts
+  SnapshotMessage after every
+  Model mutation.
+end note
+
+@enduml

@@ -1,0 +1,227 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Theme</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.resource</a>
+</div>
+
+<h1>Coverage Summary for Class: Theme (mesos.client.ui.resource)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Theme</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/56)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.resource;
+&nbsp;
+&nbsp;import java.awt.Color;
+&nbsp;import java.awt.Font;
+&nbsp;import java.awt.GraphicsEnvironment;
+&nbsp;import java.awt.Rectangle;
+&nbsp;
+&nbsp;/**
+&nbsp; * Visual palette for the client UI. Canonical colours extracted from the
+&nbsp; * official MESOS materials: box cover (Box_ITA_PREV.pdf) and playmat
+&nbsp; * (fustelle_front-p1.png). Player colours match pedine_specs.pdf Pantone refs.
+&nbsp; */
+&nbsp;public final class Theme {
+&nbsp;
+&nbsp;    private Theme() {}
+&nbsp;
+&nbsp;    // ── Backgrounds — sky/cloud playmat ──────────────────────────────────────
+<b class="nc">&nbsp;    public static final Color SKY_TOP        = new Color(0x5F, 0xCD, 0xD8);</b>
+<b class="nc">&nbsp;    public static final Color SKY_MID        = new Color(0x2D, 0xB5, 0xC7);</b>
+<b class="nc">&nbsp;    public static final Color SKY_DEEP       = new Color(0x1B, 0x7D, 0x8C);</b>
+&nbsp;
+&nbsp;    // ── Warm — sun, earth, brick (box cover interior) ────────────────────────
+<b class="nc">&nbsp;    public static final Color SUN            = new Color(0xF5, 0xA9, 0x3D);</b>
+<b class="nc">&nbsp;    public static final Color ORANGE         = new Color(0xE5, 0x64, 0x2A);</b>
+<b class="nc">&nbsp;    public static final Color CORAL          = new Color(0xC2, 0x4F, 0x2E);</b>
+<b class="nc">&nbsp;    public static final Color BRICK          = new Color(0x7A, 0x24, 0x18);</b>
+&nbsp;
+&nbsp;    // ── Cream / parchment ────────────────────────────────────────────────────
+<b class="nc">&nbsp;    public static final Color CREAM          = new Color(0xF5, 0xF0, 0xE5);</b>
+<b class="nc">&nbsp;    public static final Color CREAM_DIM      = new Color(0xE5, 0xDD, 0xC8);</b>
+&nbsp;
+&nbsp;    // ── Forest greens ────────────────────────────────────────────────────────
+<b class="nc">&nbsp;    public static final Color FOREST         = new Color(0x1D, 0x4A, 0x3C);</b>
+<b class="nc">&nbsp;    public static final Color FOREST_DEEP    = new Color(0x0A, 0x28, 0x20);</b>
+&nbsp;
+&nbsp;    // ── Stone / earth (mid-luminance ground tone) ────────────────────────────
+<b class="nc">&nbsp;    public static final Color STONE          = new Color(0x8B, 0x7A, 0x5F);</b>
+&nbsp;
+&nbsp;    // ── Night (box cover exterior, status bar) ───────────────────────────────
+<b class="nc">&nbsp;    public static final Color NIGHT_DEEP     = new Color(0x0F, 0x19, 0x33);</b>
+<b class="nc">&nbsp;    public static final Color NIGHT_MID      = new Color(0x1B, 0x2A, 0x4E);</b>
+<b class="nc">&nbsp;    public static final Color NIGHT_BLUE     = new Color(0x2A, 0x5B, 0xBA);</b>
+&nbsp;
+&nbsp;    // ── Flame (accent) ───────────────────────────────────────────────────────
+<b class="nc">&nbsp;    public static final Color FLAME          = new Color(0xF5, 0xC9, 0x28);</b>
+<b class="nc">&nbsp;    public static final Color FLAME_DEEP     = new Color(0xC9, 0x9E, 0x11);</b>
+<b class="nc">&nbsp;    public static final Color FLAME_GLOW     = new Color(0xF5, 0x8E, 0x2A);</b>
+&nbsp;
+&nbsp;    // ── Ink outline ──────────────────────────────────────────────────────────
+<b class="nc">&nbsp;    public static final Color INK            = new Color(0x0F, 0x08, 0x07);</b>
+<b class="nc">&nbsp;    public static final Color INK_SOFT       = new Color(0x2A, 0x1A, 0x14);</b>
+&nbsp;
+&nbsp;    // ── Player colours — Pantone PDF pedine_specs ────────────────────────────
+<b class="nc">&nbsp;    public static final Color P_RED          = new Color(0xF1, 0x5D, 0x3E);  // PANTONE 1788 (sampled from pedine_specs)</b>
+<b class="nc">&nbsp;    public static final Color P_YELLOW       = new Color(0xFE, 0xCE, 0x29);  // PANTONE 7406 (sampled)</b>
+<b class="nc">&nbsp;    public static final Color P_CYAN         = new Color(0x13, 0xA2, 0xC1);  // PANTONE 3135 (sampled)</b>
+<b class="nc">&nbsp;    public static final Color P_PURPLE       = new Color(0x41, 0x0B, 0x2C);  // PANTONE 7449 (sampled)</b>
+<b class="nc">&nbsp;    public static final Color P_WHITE        = new Color(0xEE, 0xEF, 0xEE);  // spec &quot;White&quot; swatch</b>
+&nbsp;
+&nbsp;    // ── Card-type frames (BGA scheme: characters green, buildings blue, events red) ──
+<b class="nc">&nbsp;    public static final Color CARD_GREEN     = new Color(0x3F, 0x8F, 0x4E);</b>
+<b class="nc">&nbsp;    public static final Color CARD_BLUE      = new Color(0x2F, 0x6F, 0xB0);</b>
+<b class="nc">&nbsp;    public static final Color CARD_RED       = new Color(0xC2, 0x3A, 0x2E);</b>
+&nbsp;
+&nbsp;    // ── Status semantic ──────────────────────────────────────────────────────
+<b class="nc">&nbsp;    public static final Color SUCCESS        = new Color(0x5F, 0xB8, 0x7E);</b>
+<b class="nc">&nbsp;    public static final Color DANGER         = CORAL;</b>
+&nbsp;
+&nbsp;    // ── Legacy aliases (kept so existing panels compile) ─────────────────────
+<b class="nc">&nbsp;    public static final Color BG_PARCHMENT      = CREAM;</b>
+<b class="nc">&nbsp;    public static final Color BG_PARCHMENT_DARK = CREAM_DIM;</b>
+<b class="nc">&nbsp;    public static final Color BG_STONE          = STONE;</b>
+<b class="nc">&nbsp;    public static final Color BG_DARK_STONE     = NIGHT_MID;</b>
+<b class="nc">&nbsp;    public static final Color TILE_BG           = CREAM;</b>
+<b class="nc">&nbsp;    public static final Color TILE_BG_HOVER     = CREAM_DIM;</b>
+<b class="nc">&nbsp;    public static final Color TILE_BORDER       = INK;</b>
+<b class="nc">&nbsp;    public static final Color CARD_BACK         = BRICK;</b>
+<b class="nc">&nbsp;    public static final Color CARD_CHARACTER    = CREAM;</b>
+<b class="nc">&nbsp;    public static final Color CARD_BUILDING     = FLAME;</b>
+<b class="nc">&nbsp;    public static final Color CARD_EVENT        = CORAL;</b>
+<b class="nc">&nbsp;    public static final Color INK_LIGHT         = INK_SOFT;</b>
+<b class="nc">&nbsp;    public static final Color P_BLUE            = P_CYAN;   // alias for compat</b>
+&nbsp;
+&nbsp;    // ── Display scaling ──────────────────────────────────────────────────────
+&nbsp;    // The fixed pixel sizes throughout the GUI were authored for this baseline
+&nbsp;    // window. SCALE keeps fonts and component dimensions proportional to the
+&nbsp;    // actual screen, so the UI fits both small high-DPI panels (e.g. Surface)
+&nbsp;    // and large desktop monitors. Computed once at class-load from the primary
+&nbsp;    // screen&#39;s usable bounds (already reported by Swing in DPI-aware units).
+&nbsp;    private static final double BASE_W = 1400.0;
+&nbsp;    private static final double BASE_H = 880.0;
+&nbsp;
+&nbsp;    /** Global UI scale factor (clamped to a sane range), from the screen size. */
+<b class="nc">&nbsp;    public static final double SCALE = computeScale();</b>
+&nbsp;
+&nbsp;    private static double computeScale() {
+&nbsp;        try {
+<b class="nc">&nbsp;            Rectangle b = GraphicsEnvironment.getLocalGraphicsEnvironment()</b>
+<b class="nc">&nbsp;                    .getMaximumWindowBounds();</b>
+<b class="nc">&nbsp;            double s = Math.min(b.width / BASE_W, b.height / BASE_H);</b>
+<b class="nc">&nbsp;            return Math.max(0.65, Math.min(1.6, s));</b>
+&nbsp;        } catch (Throwable t) {
+<b class="nc">&nbsp;            return 1.0; // headless or unusual environment → no scaling</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Scales a baseline pixel value by {@link #SCALE} (rounded, never below 1). */
+&nbsp;    public static int scale(int px) {
+<b class="nc">&nbsp;        return Math.max(1, (int) Math.round(px * SCALE));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Builds a font whose size is the baseline size scaled by {@link #SCALE}. */
+&nbsp;    public static Font font(String family, int style, int size) {
+<b class="nc">&nbsp;        return new Font(family, style, scale(size));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // Fonts (sizes scaled by SCALE)
+<b class="nc">&nbsp;    public static final Font TITLE   = font(&quot;Serif&quot;, Font.BOLD, 22);</b>
+<b class="nc">&nbsp;    public static final Font HEADING = font(&quot;Serif&quot;, Font.BOLD, 14);</b>
+<b class="nc">&nbsp;    public static final Font BODY    = font(&quot;SansSerif&quot;, Font.PLAIN, 12);</b>
+<b class="nc">&nbsp;    public static final Font SMALL   = font(&quot;SansSerif&quot;, Font.PLAIN, 10);</b>
+<b class="nc">&nbsp;    public static final Font LETTER  = font(&quot;Serif&quot;, Font.BOLD, 28);</b>
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,115 @@
+@startuml 08-mvc-distributed
+' Conceptual diagram of the distributed MVC following the "Server 2'" pattern
+' by Gian Enrico Conti (Towards Remote View, slides 43-66).
+' Useful for the university report.
+
+skinparam backgroundColor white
+skinparam component {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+    FontSize 12
+}
+skinparam package {
+    BackgroundColor #F5F5F5
+    BorderColor #777777
+}
+skinparam ArrowColor #444444
+skinparam note {
+    BackgroundColor #FFF3CD
+    BorderColor #FF9900
+}
+
+title MESOS — Distributed MVC: "Server 2'" pattern (Cugola)
+
+package "CLIENT (remote machine)" #DDEEFF {
+    package "Client-side View" {
+        [TuiClient\n(current TUI)] as TUIV
+        [BoardRenderer\n(ASCII rendering)] as BR
+        note as GUIFUT
+            <<TODO>>
+            Swing GUI
+            (not yet
+            implemented)
+        end note
+    }
+}
+
+package "NETWORK" #EEEEEE {
+    [TCP: ObjectOutputStream\n/ ObjectInputStream] as TCPNET
+    [Java RMI\n(bidirectional callback)] as RMINET
+}
+
+package "SERVER (central machine)" #DDFFD8 {
+    package "Controller" {
+        [Controller\n(processes text commands)] as CTRL
+        [ControllerWorker\n(single thread, BlockingQueue)] as CW
+    }
+
+    package "Model (pure, no I/O)" {
+        [Game\n(game state)] as GAME
+        [Board, Player,\nOfferTrack, ...] as SUBMODEL
+    }
+
+    package "VirtualView (adapters)" {
+        [ServerRegistry\n(nick → VirtualView)] as SR
+        [TcpVirtualView] as TCV
+        [RmiVirtualView] as RMIVV
+        [ModelListener → CallBack] as ML
+    }
+}
+
+' Client → Server flow (commands)
+TUIV -right-> TCPNET : ClientMessage\n(serialized)
+TCPNET -right-> CW : TcpClientHandler\nenqueues message
+
+' Command flow through MVC
+CW -down-> CTRL : msg.process(controller)
+CTRL -down-> GAME : mutate state\n(placeTotem, endRound, ...)
+
+' Model → View flow (snapshot)
+GAME -right-> ML : PropertyChangeEvent\n(observer pattern)
+ML -right-> SR : broadcast(\nSnapshotMessage.from(game))
+SR -right-> TCV : sendMessage()
+SR -right-> RMIVV : sendMessage()
+TCV -up-> TCPNET : SnapshotMessage\n(serialized)
+TCPNET -up-> TUIV : SnapshotMessage
+TUIV -> BR : render(snapshot)
+
+' RMI path
+RMIVV -up-> RMINET : onServerMessage()
+RMINET -up-> GUIFUT
+
+note bottom of ML
+    ModelListener listens for
+    PropertyChangeEvent from Game/Player
+    and triggers the broadcast.
+    The View never polls for state:
+    the server pushes it automatically.
+end note
+
+note bottom of GAME
+    The Model has no knowledge of:
+    - the network
+    - the Controller
+    - how many clients are connected
+    It only knows the PropertyChangeListener
+    registered on it.
+end note
+
+note right of CW
+    Single thread: all
+    ClientMessages are processed
+    one at a time.
+    This eliminates the need
+    for locks on Controller and Model.
+end note
+
+legend right
+    |= Pattern |= Where |
+    | Observer | Game → ModelListener → CallBack |
+    | Command | ClientMessage.process(Controller) |
+    | Proxy | VirtualView (TcpVirtualView / RmiVirtualView) |
+    | Producer-Consumer | TcpClientHandler → BlockingQueue → ControllerWorker |
+end legend
+
+@enduml

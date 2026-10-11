@@ -1,0 +1,110 @@
+@startuml 17-activity-game-round
+
+skinparam activity {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+    DiamondBackgroundColor #E8F5E9
+    DiamondBorderColor #338833
+}
+skinparam note {
+    BackgroundColor #FFE0E0
+    BorderColor #CC4444
+}
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam ArrowColor #555555
+
+title MESOS — Activity Diagram: game cycle
+
+start
+
+:Client connects — LoginMessage(nick, 0);
+
+if (first client?) then (yes)
+  :Server replies LOBBY_FIRST;
+  :Client sends LoginMessage(nick, n)\n(n ∈ [2,5]);
+  :Server replies LOBBY_ACCEPTED;
+else (no)
+  :Server replies LOBBY_JOINED n/m;
+endif
+
+:Server sends InfoMessage(availableColors);
+:Client sends ColorMessage(chosen);
+:Server replies COLOR_ACCEPTED <color>;
+
+note right
+  Colour handshake is synchronous,
+  on main thread before reader starts.
+  Heartbeat may arrive during handshake
+  — TcpTransport skips it via readHandshake().
+end note
+
+:Wait for lobby to fill\n(registry.isFull() = true);
+:StartMessage → Game.setup()\nGamePhase: SETUP → PLACEMENT;
+
+note right
+  Decks built, totems
+  randomly placed,
+  initial food assigned
+end note
+
+repeat
+
+  :GamePhase = PLACEMENT;
+
+  repeat
+    :Player sends\nCOMMAND PLACE <nick> <tileId>;
+    :Game.placeTotem(player, tile);
+    :PropertyChangeEvent → broadcast SnapshotMessage;
+  repeat while (all totems placed?) is (no)
+  ->yes;
+
+  note right
+    Auto-advance: Game.placeTotem()
+    transitions to ACTION_RESOLUTION
+    when last totem is placed.
+    No explicit BEGIN_ACT needed.
+  end note
+
+  :GamePhase = ACTION_RESOLUTION;
+
+  repeat
+    :Player sends EXECUTE <nick> [...picks];
+    :Apply card / building effect;
+    if (has ExtraTopRowPickEffect?) then (yes)
+      :Player sends EXTRA_PICK or SKIP_EXTRA;
+    endif
+    :Game.markPlayerDone(player);
+    :PropertyChangeEvent → broadcast SnapshotMessage;
+  repeat while (all players done?) is (no)
+  ->yes;
+
+  note right
+    Auto-advance: Game.markPlayerDone()
+    calls endOfRound() when last player
+    is done. No explicit END_ROUND needed.
+  end note
+
+  if (deck exhausted\nor round = 10?) then (yes — final round)
+    :Resolve all remaining events;
+    :GamePhase = FINAL_SCORING;
+    :Calculate final scores;
+    :GamePhase = GAME_OVER;
+    :Broadcast SnapshotMessage (GAME_OVER);
+    if (DB configured? — FA1) then (yes)
+      :ScoreRepository.saveResults();
+      :Broadcast RankingMessage;
+    endif
+    break
+  else (no — normal round)
+    :Resolve current round event;
+    :Discard and refill visible rows;
+    :Update turn order;
+  endif
+
+repeat while (game in progress?) is (yes)
+->end;
+
+stop
+
+@enduml

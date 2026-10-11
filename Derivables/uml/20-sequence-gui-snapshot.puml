@@ -1,0 +1,158 @@
+@startuml 20-sequence-gui-snapshot
+' Sequence diagram: SnapshotMessage arrival → EDT dispatch → panel repaint.
+' Also covers: button click → transport.send() → server round-trip.
+' Created 2026-06-07.
+
+skinparam sequenceArrowThickness 1.5
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam sequence {
+    ParticipantBackgroundColor #FFFDE7
+    ParticipantBorderColor #888855
+    LifeLineBorderColor #888855
+    ArrowColor #333333
+    NoteBackgroundColor #FFF3CD
+    NoteBorderColor #FF9900
+    GroupBorderColor #336699
+    GroupBackgroundColor #EBF5FB
+    DividerBackgroundColor #F0F4F8
+}
+
+title MESOS — GUI: SnapshotMessage flow and button action flow
+
+actor "User" as User
+
+box "Client JVM" #F9FBE7
+    participant "Network\nReader Thread" as Net
+    participant "GuiClient\n(EDT)" as GUI
+    participant "GameSnapshot" as Snap
+    participant "PhaseController" as PC
+    participant "BoardPanel\n(EDT)" as BP
+    participant "ActionPanel\n(EDT)" as AP
+    participant "StatusBar\n(EDT)" as SB
+    participant "Transport" as Trans
+end box
+
+box "Server JVM" #EBF5FB
+    participant "TcpVirtualView /\nRmiVirtualView" as VV
+end box
+
+== 1. SnapshotMessage arrival (server → panels) ==
+
+VV -> Net : delivers SnapshotMessage\n(via ObjectInputStream or RMI callback)
+
+activate Net
+Net -> GUI : SwingUtilities.invokeLater(\n  () -> handleMessage(snap))
+deactivate Net
+
+note right of Net
+  Network reader thread NEVER
+  touches Swing components directly.
+  Every mutation goes through
+  invokeLater() to run on the EDT.
+end note
+
+activate GUI
+GUI -> Snap : update(snap)
+activate Snap
+
+Snap -> Snap : update fields\n(players, rows, tiles, phase, round, era)
+Snap -> Snap : notify all listeners\n(forEach listener.run())
+
+Snap --> BP : listener.run() →\nSwingUtilities.invokeLater(repaint)
+Snap --> AP : listener.run() →\nSwingUtilities.invokeLater(repaint)
+Snap --> SB : listener.run() →\nSwingUtilities.invokeLater(repaint)
+deactivate Snap
+
+GUI -> PC : getCurrentPhase()
+activate PC
+PC -> Snap : reads phase, players, tiles
+PC --> GUI : GuiPhase (e.g. PLACEMENT_MINE)
+deactivate PC
+
+GUI -> GUI : switchCardForPhase("GAME")
+note right of GUI
+  If phase changes to a new screen
+  (e.g. LOBBY → GAME), CardLayout
+  switches the visible card.
+  countPanel.setVisible(false) +
+  rootCards.repaint() prevents
+  ghost buttons on partial repaints.
+end note
+
+deactivate GUI
+
+== 2. Panel repaint on EDT ==
+
+activate BP
+BP -> Snap : reads topRow, bottomRow,\ntiles, offerChoices
+BP -> PC : reads selectedTile,\npicksRemaining, getCurrentPhase()
+BP -> BP : paintComponent(g):\n1. gradient background\n2. cave-art full-bleed wash (α=0.13)\n3. RowPanel × 2 repaint\n4. OfferTrackPanel repaint\n5. TurnOrderTilePanel repaint
+deactivate BP
+
+activate AP
+AP -> Snap : reads phase, players
+AP -> PC : getCurrentPhase()
+AP -> AP : paintComponent(g):\nupdate title, hint, button enabled/disabled\nbased on GuiPhase
+deactivate AP
+
+activate SB
+SB -> Snap : reads phase, round, era, players
+SB -> PC : getCurrentPhase()
+SB -> SB : paintComponent(g):\nphase chip, round/era, turn indicator\n("★ Your turn" or "— wait —")
+deactivate SB
+
+== 3. User action: totem placement (button click on EDT) ==
+
+User -> AP : clicks "Confirm" button
+
+activate AP
+AP -> PC : getSelectedTile() → "B"
+AP -> GUI : onCommand.accept("PLACE alice B")
+deactivate AP
+
+activate GUI
+GUI -> Trans : send(new CommandMessage("PLACE alice B"))
+deactivate GUI
+
+activate Trans
+Trans -> VV : ObjectOutputStream.writeObject(msg)\nor RMI sendMessage(msg, nick)
+deactivate Trans
+
+note right of Trans
+  send() is called from the EDT
+  (button action listener).
+  TcpTransport.send() synchronizes
+  on 'out' to prevent interleaving
+  with any other sender.
+end note
+
+VV --> Net : (server processes command,\nbroadcasts new SnapshotMessage\nto all clients)
+
+Net -> GUI : SwingUtilities.invokeLater(\n  () -> handleMessage(newSnap))
+
+note over GUI, SB
+  The cycle repeats from step 1.
+  Each Model mutation produces
+  exactly one SnapshotMessage
+  broadcast to all clients.
+end note
+
+== 4. Watchdog daemon (parallel) ==
+
+box "Watchdog Daemon Thread" #FFF3E0
+    participant "Watchdog" as WD
+end box
+
+Net -> WD : (every message received updates\nlastMsg[0] = System.currentTimeMillis())
+
+loop every 2 s
+    WD -> WD : check now − lastMsg[0]
+    alt > 6 000 ms (no heartbeat / server crash)
+        WD -> GUI : SwingUtilities.invokeLater(\n  () -> showDisconnect(LOST_CONNECTION))
+        GUI -> GUI : cardLayout.show("DISCONNECT")
+    end
+end
+
+@enduml

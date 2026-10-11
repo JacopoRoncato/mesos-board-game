@@ -1,0 +1,185 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ExtraPickBanner</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.widget</a>
+</div>
+
+<h1>Coverage Summary for Class: ExtraPickBanner (mesos.client.ui.widget)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ExtraPickBanner</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/24)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.widget;
+&nbsp;
+&nbsp;import java.awt.BorderLayout;
+&nbsp;import java.awt.Dimension;
+&nbsp;import java.awt.Font;
+&nbsp;import javax.swing.BorderFactory;
+&nbsp;import javax.swing.JButton;
+&nbsp;import javax.swing.JLabel;
+&nbsp;import javax.swing.JPanel;
+&nbsp;import javax.swing.border.EmptyBorder;
+&nbsp;import mesos.client.ui.model.GuiPhase;
+&nbsp;import mesos.client.ui.model.PhaseController;
+&nbsp;import mesos.client.ui.resource.Theme;
+&nbsp;
+&nbsp;/**
+&nbsp; * Banner shown only during {@link GuiPhase#ACTION_EXTRA_PICK_MINE}:
+&nbsp; * yellow background, prominent &quot;BONUS&quot; title, and a SKIP button next
+&nbsp; * to the description.
+&nbsp; */
+&nbsp;public final class ExtraPickBanner extends JPanel {
+&nbsp;
+&nbsp;    private final PhaseController phase;
+<b class="nc">&nbsp;    private final JButton skip = new JButton(&quot;Salta&quot;);</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Constructs an ExtraPickBanner.
+&nbsp;     *
+&nbsp;     * @param phase  the phase controller; the banner is only visible during ACTION_EXTRA_PICK_MINE
+&nbsp;     * @param onSkip called when the player presses &quot;Salta&quot;
+&nbsp;     */
+<b class="nc">&nbsp;    public ExtraPickBanner(PhaseController phase, Runnable onSkip) {</b>
+<b class="nc">&nbsp;        this.phase = phase;</b>
+<b class="nc">&nbsp;        setOpaque(true);</b>
+<b class="nc">&nbsp;        setBackground(Theme.FLAME);</b>
+<b class="nc">&nbsp;        setBorder(BorderFactory.createCompoundBorder(</b>
+<b class="nc">&nbsp;                BorderFactory.createLineBorder(Theme.INK, 3),</b>
+<b class="nc">&nbsp;                new EmptyBorder(Theme.scale(14), Theme.scale(18), Theme.scale(14), Theme.scale(18))));</b>
+<b class="nc">&nbsp;        setLayout(new BorderLayout(Theme.scale(14), 0));</b>
+&nbsp;
+<b class="nc">&nbsp;        JLabel txt = new JLabel(</b>
+&nbsp;                &quot;&lt;html&gt;&lt;b style=&#39;font-size:14px&#39;&gt;BONUS - 1 carta extra dalla riga superiore&lt;/b&gt;&quot;
+&nbsp;              + &quot;&lt;br&gt;&lt;span style=&#39;font-size:11px&#39;&gt;Il tuo edificio B020 (Extra Top Pick) ti concede un pick aggiuntivo. &quot;
+&nbsp;              + &quot;Clicca una carta top o salta.&lt;/span&gt;&lt;/html&gt;&quot;);
+<b class="nc">&nbsp;        txt.setForeground(Theme.INK);</b>
+<b class="nc">&nbsp;        txt.setFont(new Font(&quot;Serif&quot;, Font.PLAIN, Theme.scale(13)));</b>
+&nbsp;
+<b class="nc">&nbsp;        skip.setBackground(Theme.INK);</b>
+<b class="nc">&nbsp;        skip.setForeground(Theme.CREAM);</b>
+<b class="nc">&nbsp;        skip.setFont(new Font(&quot;Serif&quot;, Font.BOLD, Theme.scale(13)));</b>
+<b class="nc">&nbsp;        skip.setBorder(new EmptyBorder(Theme.scale(8), Theme.scale(16), Theme.scale(8), Theme.scale(16)));</b>
+<b class="nc">&nbsp;        skip.setFocusPainted(false);</b>
+<b class="nc">&nbsp;        skip.addActionListener(e -&gt; { if (onSkip != null) onSkip.run(); });</b>
+&nbsp;
+<b class="nc">&nbsp;        add(txt, BorderLayout.CENTER);</b>
+<b class="nc">&nbsp;        add(skip, BorderLayout.EAST);</b>
+&nbsp;
+<b class="nc">&nbsp;        if (phase != null) phase.addListener(this::refresh);</b>
+<b class="nc">&nbsp;        refresh();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void refresh() {
+<b class="nc">&nbsp;        setVisible(phase != null &amp;&amp; phase.getGuiPhase() == GuiPhase.ACTION_EXTRA_PICK_MINE);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Dimension getMaximumSize() {
+<b class="nc">&nbsp;        return new Dimension(Integer.MAX_VALUE, getPreferredSize().height);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

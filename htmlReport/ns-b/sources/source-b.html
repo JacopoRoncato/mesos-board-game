@@ -1,0 +1,164 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TribeCountsBar</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.widget</a>
+</div>
+
+<h1>Coverage Summary for Class: TribeCountsBar (mesos.client.ui.widget)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TribeCountsBar</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.widget;
+&nbsp;
+&nbsp;import java.awt.GridLayout;
+&nbsp;import java.util.EnumMap;
+&nbsp;import javax.swing.JPanel;
+&nbsp;import mesos.client.ui.model.GameSnapshot;
+&nbsp;import mesos.client.ui.model.TribeCounts;
+&nbsp;import mesos.client.ui.resource.Theme;
+&nbsp;import mesos.enums.CharacterType;
+&nbsp;
+&nbsp;/**
+&nbsp; * CORE always-visible tribe summary (the &quot;iconcine&quot;): a compact grid of the six
+&nbsp; * character-type tokens plus a building token, each with its count. Reads from a
+&nbsp; * player&#39;s tribe via {@link TribeCounts}.
+&nbsp; *
+&nbsp; * &lt;p&gt;Self-contained and independent of the (removable) card-expansion module.
+&nbsp; */
+&nbsp;public final class TribeCountsBar extends JPanel {
+&nbsp;
+<b class="nc">&nbsp;    private static final CharacterType[] ORDER = {</b>
+&nbsp;        CharacterType.HUNTER, CharacterType.SHAMAN, CharacterType.ARTIST,
+&nbsp;        CharacterType.BUILDER, CharacterType.INVENTOR, CharacterType.GATHERER
+&nbsp;    };
+&nbsp;
+<b class="nc">&nbsp;    private final EnumMap&lt;CharacterType, TypeTokenBadge&gt; tokens = new EnumMap&lt;&gt;(CharacterType.class);</b>
+<b class="nc">&nbsp;    private final BuildingBadge buildings = new BuildingBadge(0);</b>
+&nbsp;
+<b class="nc">&nbsp;    public TribeCountsBar() {</b>
+<b class="nc">&nbsp;        setOpaque(false);</b>
+&nbsp;        // Single tidy row of the 7 tokens (6 character types + buildings):
+&nbsp;        // GridLayout(1,7) gives equal cells with no orphan. The old
+&nbsp;        // GridLayout(0,4) wrapped 7 cells to 4+3, leaving a dangling empty cell.
+<b class="nc">&nbsp;        setLayout(new GridLayout(1, 7, Theme.scale(3), Theme.scale(3)));</b>
+<b class="nc">&nbsp;        for (CharacterType t : ORDER) {</b>
+<b class="nc">&nbsp;            TypeTokenBadge b = new TypeTokenBadge(t, 0);</b>
+<b class="nc">&nbsp;            tokens.put(t, b);</b>
+<b class="nc">&nbsp;            add(b);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        add(buildings);   // 7th cell: 6 character types + buildings</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Refreshes all token counts from the given player&#39;s tribe. */
+&nbsp;    public void update(GameSnapshot.PlayerState player) {
+<b class="nc">&nbsp;        TribeCounts c = TribeCounts.of(player == null ? null : player.tribe);</b>
+<b class="nc">&nbsp;        for (CharacterType t : ORDER) tokens.get(t).setCount(c.characters(t));</b>
+<b class="nc">&nbsp;        buildings.setCount(c.buildings());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

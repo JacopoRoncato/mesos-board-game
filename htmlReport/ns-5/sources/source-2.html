@@ -1,0 +1,243 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > RmiTransport</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client</a>
+</div>
+
+<h1>Coverage Summary for Class: RmiTransport (mesos.client)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">RmiTransport</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/32)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client;
+&nbsp;
+&nbsp;import java.rmi.RemoteException;
+&nbsp;import java.rmi.registry.LocateRegistry;
+&nbsp;import java.rmi.server.UnicastRemoteObject;
+&nbsp;import java.util.List;
+&nbsp;import java.util.function.Consumer;
+&nbsp;import java.util.function.Function;
+&nbsp;import java.util.function.Supplier;
+&nbsp;import mesos.enums.TotemColor;
+&nbsp;import mesos.network.client.ClientMessage;
+&nbsp;import mesos.network.server.ErrMessage;
+&nbsp;import mesos.network.server.InfoMessage;
+&nbsp;import mesos.network.server.OkMessage;
+&nbsp;import mesos.network.server.ServerMessage;
+&nbsp;import mesos.server.RemoteGameService;
+&nbsp;
+&nbsp;/**
+&nbsp; * RMI implementation of {@link Transport}.
+&nbsp; *
+&nbsp; * &lt;p&gt;This class extends {@link UnicastRemoteObject} so that the server can call
+&nbsp; * {@link #onServerMessage} directly as a remote method. Without exporting the
+&nbsp; * object via {@code super()}, the server receives a {@link RemoteException} on
+&nbsp; * the first push attempt.
+&nbsp; *
+&nbsp; * &lt;p&gt;Outbound messages are sent via {@link RemoteGameService#sendMessage}.
+&nbsp; * Inbound messages arrive on a JVM-managed RMI thread and are forwarded to the
+&nbsp; * listener registered with {@link #setOnMessage}.
+&nbsp; */
+&nbsp;public class RmiTransport extends UnicastRemoteObject implements Transport, RemoteGameCallback {
+&nbsp;
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;
+&nbsp;    private RemoteGameService        service;
+&nbsp;    private String                   nick;
+&nbsp;    private Consumer&lt;ServerMessage&gt;  onMessage;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates and exports this object so the server can call back into it.
+&nbsp;     *
+&nbsp;     * @throws RemoteException if the export fails
+&nbsp;     */
+&nbsp;    public RmiTransport() throws RemoteException {
+<b class="nc">&nbsp;        super(1235); // exports this object — required for server push to work</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void setOnMessage(Consumer&lt;ServerMessage&gt; listener) {
+<b class="nc">&nbsp;        this.onMessage = listener;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Looks up the {@link RemoteGameService} in the RMI registry and calls
+&nbsp;     * {@code login}, passing {@code this} as the callback stub.
+&nbsp;     */
+&nbsp;    @Override
+&nbsp;    public void connect(String host, int port, String nick,
+&nbsp;                        Supplier&lt;Integer&gt; askNumPlayers,
+&nbsp;                        Function&lt;List&lt;TotemColor&gt;, TotemColor&gt; askColor) throws Exception {
+<b class="nc">&nbsp;        this.nick = nick;</b>
+<b class="nc">&nbsp;        service = (RemoteGameService)</b>
+<b class="nc">&nbsp;                LocateRegistry.getRegistry(host, port).lookup(&quot;mesos-game&quot;);</b>
+&nbsp;        String status;
+&nbsp;        try {
+<b class="nc">&nbsp;            status = service.login(nick, this);</b>
+&nbsp;        } catch (RemoteException e) {
+<b class="nc">&nbsp;            System.err.println(&quot;[rmi] login failed: &quot; + e.getMessage());</b>
+<b class="nc">&nbsp;            throw new Exception(e.getMessage());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        int playerIndex;
+&nbsp;        int totalPlayers;
+<b class="nc">&nbsp;        if (status.startsWith(&quot;RECOVERY_JOINED&quot;) &amp;&amp; onMessage != null) {</b>
+<b class="nc">&nbsp;            onMessage.accept(new OkMessage(status));</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (status.equals(&quot;LOBBY_FIRST&quot;)) {</b>
+<b class="nc">&nbsp;            int n = askNumPlayers.get();</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                service.setNumPlayers(n);</b>
+&nbsp;            } catch (RemoteException e) {
+<b class="nc">&nbsp;                System.err.println(&quot;[rmi] lobby rejected: &quot; + e.getMessage());</b>
+<b class="nc">&nbsp;                throw new Exception(e.getMessage());</b>
+&nbsp;            }
+<b class="nc">&nbsp;            playerIndex  = 1;</b>
+<b class="nc">&nbsp;            totalPlayers = n;</b>
+&nbsp;        } else {
+&nbsp;            // &quot;LOBBY_JOINED n/m&quot; or &quot;RECOVERY_JOINED n/m&quot; → split on space and slash
+<b class="nc">&nbsp;            String[] parts = status.split(&quot;[ /]&quot;);</b>
+<b class="nc">&nbsp;            playerIndex  = Integer.parseInt(parts[1]);</b>
+<b class="nc">&nbsp;            totalPlayers = Integer.parseInt(parts[2]);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // In recovery: returns only the saved color for this nick; otherwise all available
+<b class="nc">&nbsp;        List&lt;TotemColor&gt; available = service.getAvailableColorsForNick(nick);</b>
+<b class="nc">&nbsp;        if (onMessage != null)</b>
+<b class="nc">&nbsp;            onMessage.accept(new InfoMessage(nick, playerIndex, totalPlayers, available));</b>
+<b class="nc">&nbsp;        TotemColor chosen   = askColor.apply(available);</b>
+<b class="nc">&nbsp;        TotemColor assigned = service.claimColor(nick, chosen);</b>
+<b class="nc">&nbsp;        if (onMessage != null)</b>
+<b class="nc">&nbsp;            onMessage.accept(new OkMessage(&quot;COLOR_ACCEPTED &quot; + assigned));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Called remotely by the server on every game state change.
+&nbsp;     * Forwards the message to the registered listener (e.g. TuiClient or GuiClient).
+&nbsp;     */
+&nbsp;    @Override
+&nbsp;    public void onServerMessage(ServerMessage message) throws RemoteException {
+<b class="nc">&nbsp;        if (onMessage != null) onMessage.accept(message);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void send(ClientMessage msg) throws Exception {
+&nbsp;        try {
+<b class="nc">&nbsp;            service.sendMessage(msg, nick);</b>
+&nbsp;        } catch (RemoteException e) {
+<b class="nc">&nbsp;            if (onMessage != null)</b>
+<b class="nc">&nbsp;                onMessage.accept(new ErrMessage(&quot;PLAYER_DISCONNECTED (connection lost)&quot;));</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void close() {
+<b class="nc">&nbsp;        try { UnicastRemoteObject.unexportObject(this, true); } catch (Exception ignored) {}</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

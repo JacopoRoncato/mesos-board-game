@@ -1,0 +1,160 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > Hunter</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.cards.characters</a>
+</div>
+
+<h1>Coverage Summary for Class: Hunter (mesos.cards.characters)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Hunter</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    75%
+  </span>
+  <span class="absValue">
+    (3/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    85,7%
+  </span>
+  <span class="absValue">
+    (6/7)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.cards.characters;
+&nbsp;
+&nbsp;import java.util.Set;
+&nbsp;import mesos.enums.CharacterType;
+&nbsp;import mesos.enums.Era;
+&nbsp;import mesos.enums.PlayerCount;
+&nbsp;import mesos.player.Player;
+&nbsp;
+&nbsp;/**
+&nbsp; * A Hunter character card. If this card shows an immediate food icon,
+&nbsp; * the player gains food equal to their current hunter count upon purchase.
+&nbsp; */
+&nbsp;public class Hunter extends CharacterCard {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private final boolean hasImmediateFoodIcon;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a Hunter card.
+&nbsp;     *
+&nbsp;     * @param hasImmediateFoodIcon {@code true} if this card triggers immediate food gain on purchase
+&nbsp;     */
+&nbsp;    public Hunter(String name, Era era, Set&lt;PlayerCount&gt; allowedPlayerCounts, boolean hasImmediateFoodIcon) {
+<b class="fc">&nbsp;        super(name, era, allowedPlayerCounts);</b>
+<b class="fc">&nbsp;        this.hasImmediateFoodIcon = hasImmediateFoodIcon;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void onPurchase(Player player) {
+<b class="fc">&nbsp;        if (hasImmediateFoodIcon) {</b>
+<b class="fc">&nbsp;            int hunterCount = player.getTribe().countCharacters(mesos.enums.CharacterType.HUNTER);</b>
+<b class="fc">&nbsp;            player.gainFood(hunterCount);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public CharacterType getType() {
+<b class="fc">&nbsp;        return CharacterType.HUNTER;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns {@code true} if this hunter card has an immediate food icon. */
+&nbsp;    public boolean hasImmediateFoodIcon() {
+<b class="nc">&nbsp;        return hasImmediateFoodIcon;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

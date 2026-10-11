@@ -1,0 +1,272 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > ScoreRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.db</a>
+</div>
+
+<h1>Coverage Summary for Class: ScoreRepository (mesos.db)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ScoreRepository</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/49)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.db;
+&nbsp;
+&nbsp;import java.io.BufferedReader;
+&nbsp;import java.io.InputStream;
+&nbsp;import java.io.InputStreamReader;
+&nbsp;import java.sql.Connection;
+&nbsp;import java.sql.DriverManager;
+&nbsp;import java.sql.PreparedStatement;
+&nbsp;import java.sql.ResultSet;
+&nbsp;import java.sql.SQLException;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import mesos.player.Player;
+&nbsp;
+&nbsp;/**
+&nbsp; * Handles all MySQL database operations: creating the database if it does not exist,
+&nbsp; * creating the {@code game_results} table if it does not exist, saving end-of-game
+&nbsp; * results, and reading the global leaderboard.
+&nbsp; */
+&nbsp;public class ScoreRepository {
+&nbsp;
+&nbsp;    /** Name of the MySQL database managed by this repository. */
+&nbsp;    public static final String DB_NAME = &quot;GC43_Mesos_DB&quot;;
+&nbsp;
+&nbsp;    private final Connection conn;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Opens a connection to MySQL, creates the {@code GC43_Mesos_DB} database if it
+&nbsp;     * does not exist, and then creates the {@code game_results} table if it does not exist.
+&nbsp;     *
+&nbsp;     * @param mysqlHost MySQL host, optionally with port (e.g. &quot;localhost&quot; or &quot;localhost:3306&quot;);
+&nbsp;     *                  a full JDBC URL (e.g. &quot;jdbc:mysql://localhost:3306/mesos&quot;) is also accepted
+&nbsp;     * @param user      MySQL username
+&nbsp;     * @param pass      MySQL password
+&nbsp;     * @throws SQLException if the connection fails or the schema cannot be initialised
+&nbsp;     */
+<b class="nc">&nbsp;    public ScoreRepository(String mysqlHost, String user, String pass) throws SQLException {</b>
+&nbsp;        // mysqlHost accepts &quot;localhost&quot;, &quot;localhost:3306&quot;, or a full JDBC URL
+<b class="nc">&nbsp;        String normalized = mysqlHost;</b>
+<b class="nc">&nbsp;        if (mysqlHost.contains(&quot;://&quot;)) {</b>
+&nbsp;            // Extract the host:port part from the URL, discarding scheme and path
+<b class="nc">&nbsp;            String afterSlashes = mysqlHost.substring(mysqlHost.indexOf(&quot;://&quot;) + 3);</b>
+<b class="nc">&nbsp;            int slashIdx = afterSlashes.indexOf(&#39;/&#39;);</b>
+<b class="nc">&nbsp;            normalized = slashIdx &gt;= 0 ? afterSlashes.substring(0, slashIdx) : afterSlashes;</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        String host;
+&nbsp;        int port;
+<b class="nc">&nbsp;        if (normalized.contains(&quot;:&quot;)) {</b>
+<b class="nc">&nbsp;            String[] parts = normalized.split(&quot;:&quot;, 2);</b>
+<b class="nc">&nbsp;            host = parts[0];</b>
+<b class="nc">&nbsp;            port = Integer.parseInt(parts[1]);</b>
+&nbsp;        } else {
+<b class="nc">&nbsp;            host = normalized;</b>
+<b class="nc">&nbsp;            port = 3306;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        String baseUrl = &quot;jdbc:mysql://&quot; + host + &quot;:&quot; + port + &quot;/&quot;;</b>
+&nbsp;
+&nbsp;        // Step 1: connect without a database name to create the database if absent
+<b class="nc">&nbsp;        try (Connection root = DriverManager.getConnection(baseUrl, user, pass)) {</b>
+<b class="nc">&nbsp;            root.createStatement().execute(</b>
+&nbsp;                &quot;CREATE DATABASE IF NOT EXISTS `&quot; + DB_NAME + &quot;` &quot;
+&nbsp;                + &quot;CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci&quot;);
+<b class="nc">&nbsp;            System.out.println(&quot;[db] database &quot; + DB_NAME + &quot; verificato/creato&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Step 2: open a persistent connection to the specific database
+<b class="nc">&nbsp;        this.conn = DriverManager.getConnection(baseUrl + DB_NAME, user, pass);</b>
+<b class="nc">&nbsp;        initSchema();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Reads {@code schema.sql} from the classpath and executes its
+&nbsp;     * {@code CREATE TABLE IF NOT EXISTS} statement. Idempotent: safe to call on every
+&nbsp;     * server start.
+&nbsp;     *
+&nbsp;     * @throws SQLException if the schema file is missing or the statement fails
+&nbsp;     */
+&nbsp;    private void initSchema() throws SQLException {
+<b class="nc">&nbsp;        try (InputStream is = ScoreRepository.class.getResourceAsStream(&quot;/sql/schema.sql&quot;)) {</b>
+<b class="nc">&nbsp;            if (is == null) throw new SQLException(&quot;schema.sql not found in classpath&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;            String sql = new BufferedReader(new InputStreamReader(is))</b>
+<b class="nc">&nbsp;                    .lines()</b>
+<b class="nc">&nbsp;                    .reduce(&quot;&quot;, (a, b) -&gt; a + &quot;\n&quot; + b);</b>
+&nbsp;
+<b class="nc">&nbsp;            try (var stmt = conn.createStatement()) {</b>
+<b class="nc">&nbsp;                stmt.execute(sql);</b>
+&nbsp;            }
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            throw new SQLException(&quot;Failed to init schema: &quot; + e.getMessage(), e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Persists one row per player in the {@code game_results} table. Called when the
+&nbsp;     * game phase transitions to GAME_OVER.
+&nbsp;     *
+&nbsp;     * @param ranking    players already sorted by score (from {@code game.getRanking()})
+&nbsp;     * @param numPlayers number of players in the finished game
+&nbsp;     * @throws SQLException if the insert fails
+&nbsp;     */
+&nbsp;    public void saveResults(List&lt;Player&gt; ranking, int numPlayers) throws SQLException {
+<b class="nc">&nbsp;        String gameId = java.util.UUID.randomUUID().toString();</b>
+<b class="nc">&nbsp;        String sql = &quot;INSERT INTO game_results (game_id, nickname, score, num_players) VALUES (?, ?, ?, ?)&quot;;</b>
+<b class="nc">&nbsp;        try (PreparedStatement ps = conn.prepareStatement(sql)) {</b>
+<b class="nc">&nbsp;            for (Player p : ranking) {</b>
+<b class="nc">&nbsp;                ps.setString(1, gameId);</b>
+<b class="nc">&nbsp;                ps.setString(2, p.getId());</b>
+<b class="nc">&nbsp;                ps.setInt(3, p.getPrestigePoints());</b>
+<b class="nc">&nbsp;                ps.setInt(4, numPlayers);</b>
+<b class="nc">&nbsp;                ps.addBatch();</b>
+&nbsp;            }
+<b class="nc">&nbsp;            ps.executeBatch();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Returns the aggregated leaderboard for a given player count: one entry per
+&nbsp;     * player with the cumulative sum of all their final scores. Ordered by total
+&nbsp;     * score descending (highest first = position 1).
+&nbsp;     *
+&nbsp;     * @param numPlayers filter — only games with this number of players are counted
+&nbsp;     * @return list of {@link ScoreResult} ordered highest total score first
+&nbsp;     */
+&nbsp;    public List&lt;ScoreResult&gt; getRanking(int numPlayers) throws SQLException {
+<b class="nc">&nbsp;        String sql = &quot;SELECT nickname, SUM(score) AS total_score, &quot;</b>
+&nbsp;                   + &quot;num_players, COUNT(*) AS games_played &quot;
+&nbsp;                   + &quot;FROM game_results WHERE num_players = ? &quot;
+&nbsp;                   + &quot;GROUP BY nickname, num_players ORDER BY total_score DESC&quot;;
+<b class="nc">&nbsp;        List&lt;ScoreResult&gt; result = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        try (PreparedStatement ps = conn.prepareStatement(sql)) {</b>
+<b class="nc">&nbsp;            ps.setInt(1, numPlayers);</b>
+<b class="nc">&nbsp;            try (ResultSet rs = ps.executeQuery()) {</b>
+<b class="nc">&nbsp;                while (rs.next()) {</b>
+<b class="nc">&nbsp;                    result.add(new ScoreResult(</b>
+<b class="nc">&nbsp;                            rs.getString(&quot;nickname&quot;),</b>
+<b class="nc">&nbsp;                            rs.getInt(&quot;total_score&quot;),</b>
+<b class="nc">&nbsp;                            rs.getInt(&quot;num_players&quot;),</b>
+<b class="nc">&nbsp;                            rs.getInt(&quot;games_played&quot;)</b>
+&nbsp;                    ));
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        return result;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Closes the database connection. Registered as a shutdown hook in {@code ServerMain}
+&nbsp;     * so it is called when the server shuts down.
+&nbsp;     */
+&nbsp;    public void close() {
+<b class="nc">&nbsp;        try { conn.close(); } catch (SQLException ignored) {}</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

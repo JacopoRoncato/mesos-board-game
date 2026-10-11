@@ -1,0 +1,136 @@
+@startuml 02-sequence-login-start
+' Sequence diagram: client connection and game start (two-step lobby handshake + color selection).
+' Updated after commit fcec8e7 (two-step handshake: LOBBY_FIRST/LOBBY_JOINED/LOBBY_ACCEPTED).
+' Updated: ColorMessage exchange (task 3.5) — InfoMessage carries availableColors,
+'          client sends ColorMessage, server replies OkMessage("COLOR_ACCEPTED <color>").
+
+skinparam sequenceArrowThickness 1.5
+skinparam backgroundColor white
+skinparam sequenceParticipant {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam sequenceActor {
+    BackgroundColor #DDEEFF
+}
+skinparam note {
+    BackgroundColor #FFF3CD
+}
+
+title MESOS — Client Connection and Game Start (TCP, two-step handshake)
+
+actor "TCP Client A\n(bob, first)" as CA
+actor "TCP Client B\n(alice, second)" as CB
+participant "TcpClientHandler\n[A]" as TCHA
+participant "TcpClientHandler\n[B]" as TCHB
+participant ServerRegistry as SR
+participant "BlockingQueue\n<ClientMessage>" as BQ
+participant ControllerWorker as CW
+participant "StartMessage\n.process()" as SM
+participant Controller as CTRL
+participant Game as G
+participant ModelListener as ML
+
+== Phase 1 — Client A Connection (first client) ==
+
+CA -> TCHA : connect TCP
+CA -> TCHA : writeObject(LoginMessage("bob", 0))
+note right: numPlayers is always 0\nin the initial login
+
+TCHA -> SR : tryRegister("bob", TcpVirtualView_A)
+SR --> TCHA : true
+note right: atomic putIfAbsent —\nguarantees nick uniqueness
+
+TCHA -> SR : getExpectedPlayers() → -1
+note right: -1 means no player count\nset yet → this is the first client
+
+TCHA -> CA : OkMessage("LOBBY_FIRST")
+
+CA -> TCHA : writeObject(LoginMessage("bob", 2))
+note right: second login carries\nthe chosen player count
+
+TCHA -> TCHA : validate: 2 ∈ [2,5] → OK
+TCHA -> SR : setExpectedPlayers(2)
+TCHA -> CA : OkMessage("LOBBY_ACCEPTED")
+TCHA -> CA : InfoMessage("bob", 1, 2, [RED,BLUE,WHITE,YELLOW,BLACK])
+note right: availableColors = all colors\n(first client, none claimed yet)\nTuiClient prints "[lobby] You are 'bob'..."
+
+CA -> CA : askColor(available)\n[user picks from numbered list]
+CA -> TCHA : writeObject(ColorMessage(RED))
+TCHA -> TCHA : registry.claimColor("bob", RED) → RED
+TCHA -> CA : OkMessage("COLOR_ACCEPTED RED")
+note right: reader thread starts here.\nreadHandshake() was used throughout\nthe handshake to skip any HeartbeatMessage\narriving before the reader thread starts.
+
+== Phase 2 — Client B Connection (subsequent client) ==
+
+CB -> TCHB : connect TCP (new thread)
+CB -> TCHB : writeObject(LoginMessage("alice", 0))
+
+TCHB -> SR : tryRegister("alice", TcpVirtualView_B)
+SR --> TCHB : true
+
+TCHB -> SR : getExpectedPlayers() → 2
+note right: expectedPlayers != -1 →\nnot the first client
+
+TCHB -> CB : OkMessage("LOBBY_JOINED 2/2")
+TCHB -> CB : InfoMessage("alice", 2, 2, [BLUE,WHITE,YELLOW,BLACK])
+note right: RED already claimed by bob.\nFor RMI clients, InfoMessage is\nsynthesized locally in RmiTransport.
+
+CB -> CB : askColor(available)\n[user picks from numbered list]
+CB -> TCHB : writeObject(ColorMessage(BLUE))
+TCHB -> TCHB : registry.claimColor("alice", BLUE) → BLUE
+TCHB -> CB : OkMessage("COLOR_ACCEPTED BLUE")
+note right: reader thread starts here.
+
+== Phase 3 — Start (sent by Client A) ==
+
+CA -> TCHA : writeObject(StartMessage)
+TCHA -> BQ : queue.put(StartMessage)
+BQ -> CW : take() — StartMessage
+CW -> SM : msg.setRegistry(registry)
+CW -> SM : msg.process(null)
+note right of SM
+    controller = null before START.
+    StartMessage is the only message
+    that creates Game and Controller.
+end note
+
+SM -> SR : isFull() → true (2/2)
+SM -> G : new Game(TWO, [bob, alice])
+SM -> CTRL : new Controller(game)
+SM -> CTRL : processCmd("START")
+CTRL -> G : startGame() → phase PLACEMENT
+
+note right of SM
+    The listener is NOT yet wired:
+    setup events (FOOD, PHASE)
+    are silently ignored.
+    A single clean snapshot will be sent.
+end note
+
+SM -> ML : new ModelListener(evt → broadcast(Snapshot))
+SM -> CTRL : setListener(ML)
+CTRL -> G : setListener(ML)
+SM -> SR : setController(newCtrl)
+
+note right of SR
+    From here on, ControllerWorker
+    will find controller != null.
+end note
+
+SM -> SR : broadcast(SnapshotMessage.from(game))
+SR -> CA : sendMessage(SnapshotMessage)
+SR -> CB : sendMessage(SnapshotMessage)
+
+SM -> CA : sendMessage(OkMessage("GAME_STARTED players=bob,alice"))
+
+== Error path: NICKNAME_TAKEN ==
+
+note over TCHA, SR
+    If tryRegister() returns false (nick already taken):
+    TcpClientHandler sends ErrMessage("NICKNAME_TAKEN bob")
+    and closes the connection without entering the game loop.
+    registeredNick stays null → handleDisconnection() NOT called.
+end note
+
+@enduml

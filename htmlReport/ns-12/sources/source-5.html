@@ -1,0 +1,133 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > RankingMessage</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.network.server</a>
+</div>
+
+<h1>Coverage Summary for Class: RankingMessage (mesos.network.server)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">RankingMessage</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.network.server;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import mesos.db.ScoreResult;
+&nbsp;
+&nbsp;/**
+&nbsp; * Sent by the server to all clients at the end of a game.
+&nbsp; * Contains the aggregated leaderboard for the number of players in this game:
+&nbsp; * one {@link ScoreResult} per player, ranked by cumulative total score.
+&nbsp; */
+&nbsp;public class RankingMessage implements ServerMessage {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;
+&nbsp;    private final List&lt;ScoreResult&gt; entries;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a ranking message.
+&nbsp;     *
+&nbsp;     * @param entries the leaderboard entries in ranked order
+&nbsp;     */
+<b class="nc">&nbsp;    public RankingMessage(List&lt;ScoreResult&gt; entries) {</b>
+<b class="nc">&nbsp;        this.entries = entries;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the leaderboard entries. */
+&nbsp;    public List&lt;ScoreResult&gt; getEntries() {
+<b class="nc">&nbsp;        return entries;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

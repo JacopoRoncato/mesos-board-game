@@ -1,0 +1,164 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SustenanceEvent</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.cards.events</a>
+</div>
+
+<h1>Coverage Summary for Class: SustenanceEvent (mesos.cards.events)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SustenanceEvent</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (13/13)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.cards.events;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Set;
+&nbsp;import mesos.enums.Era;
+&nbsp;import mesos.enums.EventType;
+&nbsp;import mesos.enums.PlayerCount;
+&nbsp;import mesos.player.Player;
+&nbsp;
+&nbsp;/**
+&nbsp; * Sustenance event: each player must pay food equal to their character count minus discounts.
+&nbsp; * For every character they cannot feed, they lose the printed PP penalty.
+&nbsp; */
+&nbsp;public class SustenanceEvent extends EventCard {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private final int ppPenaltyPerUnfedCharacter;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a sustenance event card.
+&nbsp;     *
+&nbsp;     * @param ppPenaltyPerUnfedCharacter prestige lost per character the player cannot feed
+&nbsp;     */
+&nbsp;    public SustenanceEvent(String name, Era era, Set&lt;PlayerCount&gt; allowedPlayerCounts, int ppPenaltyPerUnfedCharacter) {
+<b class="fc">&nbsp;        super(name, era, allowedPlayerCounts, EventType.SUSTENANCE);</b>
+<b class="fc">&nbsp;        this.ppPenaltyPerUnfedCharacter = ppPenaltyPerUnfedCharacter;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void resolveEvent(List&lt;Player&gt; players) {
+<b class="fc">&nbsp;        for (Player player : players) {</b>
+<b class="fc">&nbsp;            int totalCharacters = player.getTribe().getCharacterCards().size();</b>
+<b class="fc">&nbsp;            int totalDiscount = player.getTribe().calculateSustenanceDiscount()</b>
+<b class="fc">&nbsp;                    + player.getTribe().getExtraSustenanceDiscount(player);</b>
+<b class="fc">&nbsp;            int foodNeeded = Math.max(0, totalCharacters - totalDiscount);</b>
+<b class="fc">&nbsp;            int foodAvailable = player.getFood();</b>
+<b class="fc">&nbsp;            int unfedCharacters = Math.max(0, foodNeeded - foodAvailable);</b>
+<b class="fc">&nbsp;            player.payFood(Math.min(foodNeeded, foodAvailable));</b>
+<b class="fc">&nbsp;            if (unfedCharacters &gt; 0) {</b>
+<b class="fc">&nbsp;                player.removePrestige(unfedCharacters * ppPenaltyPerUnfedCharacter);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the prestige penalty per unfed character for this event. */
+&nbsp;    public int getPpPenaltyPerUnfedCharacter() {
+<b class="fc">&nbsp;        return ppPenaltyPerUnfedCharacter;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

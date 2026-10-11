@@ -1,0 +1,236 @@
+@startuml 04-network-class-diagram
+' Class diagram: mesos.network.server + mesos.network.client (messages/DTOs),
+' mesos.server (VirtualView + TCP/RMI implementations), mesos.client (RemoteGameCallback).
+' Updated after:
+'   893e187 — split mesos.network into server/client sub-packages, removed EventMessage
+'   c459e5c — EventMessage class deleted
+'   eecf3ea — PlayerSnapshot gains totemColor field
+'   FA1     — RankingMessage added (leaderboard DB)
+'   FA2     — HeartbeatMessage, InfoMessage, ColorMessage added (heartbeat + colour handshake)
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam interface {
+    BackgroundColor #E8F5E9
+    BorderColor #338833
+}
+skinparam note {
+    BackgroundColor #FFE0E0
+    BorderColor #CC4444
+}
+
+title MESOS — Class Diagram: messages and transport channels (current state)
+
+package "mesos.network.server" {
+
+    interface ServerMessage <<Serializable>> {
+    }
+
+    class OkMessage <<Serializable>> {
+        - text : String
+        + getText() : String
+    }
+
+    class ErrMessage <<Serializable>> {
+        - reason : String
+        + getReason() : String
+    }
+
+    class InfoMessage <<Serializable>> {
+        - nick : String
+        - playerIndex : int
+        - totalPlayers : int
+        - availableColors : List<TotemColor>
+        + getNick() : String
+        + getPlayerIndex() : int
+        + getTotalPlayers() : int
+        + getAvailableColors() : List<TotemColor>
+    }
+
+    class HeartbeatMessage <<Serializable>> {
+    }
+
+    class RankingMessage <<Serializable>> {
+        - entries : List<ScoreResult>
+        + getEntries() : List<ScoreResult>
+    }
+
+    class SnapshotMessage <<Serializable>> {
+        - phase : String
+        - round : int
+        - era : String
+        - currentPlacementPlayerId : String
+        - currentExecutionPlayerId : String
+        - extraPickPendingId : String
+        - topRow : List<SlotSnapshot>
+        - bottomRow : List<SlotSnapshot>
+        - offerTrack : List<TileSnapshot>
+        - players : List<PlayerSnapshot>
+        + {static} from(Game) : SnapshotMessage
+        + getPhase() : String
+        + getRound() : int
+        + getEra() : String
+        + getCurrentPlacementPlayerId() : String
+        + getCurrentExecutionPlayerId() : String
+        + getExtraPickPendingId() : String
+        + getTopRow() : List<SlotSnapshot>
+        + getBottomRow() : List<SlotSnapshot>
+        + getOfferTrack() : List<TileSnapshot>
+        + getPlayers() : List<PlayerSnapshot>
+    }
+
+    class "SnapshotMessage.SlotSnapshot" as SlotSS <<Serializable>> {
+        - kind : String
+        - name : String
+        + getKind() : String
+        + getName() : String
+    }
+
+    class "SnapshotMessage.TileSnapshot" as TileSS <<Serializable>> {
+        - tileId : String
+        - occupant : String
+        + getTileId() : String
+        + getOccupant() : String
+    }
+
+    class "SnapshotMessage.PlayerSnapshot" as PlayerSS <<Serializable>> {
+        - id : String
+        - food : int
+        - prestigePoints : int
+        - selectedTile : String
+        - totemColor : String
+        + getId() : String
+        + getFood() : int
+        + getPrestigePoints() : int
+        + getSelectedTile() : String
+        + getTotemColor() : String
+    }
+}
+
+package "mesos.network.client" {
+
+    abstract class ClientMessage <<Serializable>> {
+        # sender : VirtualView {transient}
+        # registry : ServerRegistry {transient}
+        + setSender(VirtualView)
+        + setRegistry(ServerRegistry)
+        + getSender() : VirtualView
+        + getRegistry() : ServerRegistry
+        + {abstract} process(Controller)
+    }
+
+    class LoginMessage <<Serializable>> {
+        - nick : String
+        - numPlayers : int
+        + getNick() : String
+        + getNumPlayers() : int
+        + process(Controller)
+    }
+
+    class StartMessage <<Serializable>> {
+        + process(Controller)
+    }
+
+    class CommandMessage <<Serializable>> {
+        - cmd : String
+        + process(Controller)
+    }
+
+    class ColorMessage <<Serializable>> {
+        - color : TotemColor
+        + getColor() : TotemColor
+        + process(Controller)
+    }
+}
+
+package "mesos.server" {
+    interface VirtualView <<interface>> {
+        + sendMessage(ServerMessage)
+        + getNick() : String
+    }
+
+    class TcpVirtualView {
+        - out : ObjectOutputStream
+        - nick : String
+        + sendMessage(ServerMessage)
+        + getNick() : String
+    }
+
+    class RmiVirtualView {
+        - callback : RemoteGameCallback
+        - nick : String
+        + sendMessage(ServerMessage)
+        + getNick() : String
+    }
+}
+
+package "mesos.client" {
+    interface RemoteGameCallback <<Remote>> {
+        + onServerMessage(ServerMessage)
+    }
+}
+
+' ClientMessage inheritance
+ClientMessage <|-- LoginMessage
+ClientMessage <|-- StartMessage
+ClientMessage <|-- CommandMessage
+ClientMessage <|-- ColorMessage
+
+' ServerMessage implementations
+ServerMessage <|.. OkMessage
+ServerMessage <|.. ErrMessage
+ServerMessage <|.. SnapshotMessage
+ServerMessage <|.. InfoMessage
+ServerMessage <|.. HeartbeatMessage
+ServerMessage <|.. RankingMessage
+
+' VirtualView implementations
+VirtualView <|.. TcpVirtualView
+VirtualView <|.. RmiVirtualView
+
+' SnapshotMessage composition
+SnapshotMessage *-- SlotSS
+SnapshotMessage *-- TileSS
+SnapshotMessage *-- PlayerSS
+
+' RmiVirtualView uses RemoteGameCallback
+RmiVirtualView --> RemoteGameCallback : calls\nonServerMessage()
+
+note bottom of LoginMessage
+    Step 1: client sends LoginMessage(nick, 0).
+    Step 2 (first client only): client resends
+    LoginMessage(nick, n) after LOBBY_FIRST.
+    NOT inserted into BlockingQueue —
+    handled at TCP layer by TcpClientHandler.
+end note
+
+note bottom of ColorMessage
+    Sent after InfoMessage, before game loop.
+    color may be null → server auto-assigns
+    the first available TotemColor.
+    Handled at TCP layer, not queued.
+end note
+
+note bottom of HeartbeatMessage
+    Broadcast every 2 s by ServerRegistry.startHeartbeat().
+    Carries no data. Clients update a timestamp on
+    receipt; watchdog exits if no message in 6 s.
+end note
+
+note bottom of RankingMessage
+    Broadcast after GAME_OVER only when a MySQL DB
+    is configured (FA1 — args[2..4] to ServerMain).
+    Contains List<ScoreResult> with aggregated rankings.
+end note
+
+note bottom of PlayerSS
+    totemColor: TotemColor.name() (e.g. "RED").
+    Required by GUI to color-code player panels.
+end note
+
+@enduml

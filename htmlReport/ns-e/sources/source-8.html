@@ -1,0 +1,207 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TriggeredFoodRewardEffect</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.effects</a>
+</div>
+
+<h1>Coverage Summary for Class: TriggeredFoodRewardEffect (mesos.effects)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TriggeredFoodRewardEffect</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (14/14)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TriggeredFoodRewardEffect$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (15/15)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.effects;
+&nbsp;
+&nbsp;import mesos.cards.characters.CharacterCard;
+&nbsp;import mesos.enums.TriggeredFoodRewardType;
+&nbsp;import mesos.player.Player;
+&nbsp;
+&nbsp;/**
+&nbsp; * Building effect that grants food whenever the player&#39;s tribe reaches a new
+&nbsp; * complete set or a new matching inventor pair (depending on the trigger type).
+&nbsp; */
+&nbsp;public class TriggeredFoodRewardEffect extends BuildingEffect {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private final TriggeredFoodRewardType triggerType;
+&nbsp;    private final int foodReward;
+&nbsp;    private int rewardedOccurrences;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a triggered food reward effect.
+&nbsp;     *
+&nbsp;     * @param triggerType the condition that triggers food gain
+&nbsp;     * @param foodReward  food awarded each time a new trigger condition is met
+&nbsp;     */
+<b class="fc">&nbsp;    public TriggeredFoodRewardEffect(TriggeredFoodRewardType triggerType, int foodReward) {</b>
+<b class="fc">&nbsp;        this.triggerType = triggerType;</b>
+<b class="fc">&nbsp;        this.foodReward = foodReward;</b>
+<b class="fc">&nbsp;        this.rewardedOccurrences = 0;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void onAcquire(Player owner) {
+&nbsp;        // Rules 17.1, 17.5: do NOT reward retroactively for sets/pairs that
+&nbsp;        // already existed when the building was acquired. Snapshot the count.
+<b class="fc">&nbsp;        rewardedOccurrences = countCurrentOccurrences(owner);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void onCharacterAdded(Player owner, CharacterCard character) {
+<b class="fc">&nbsp;        int currentOccurrences = countCurrentOccurrences(owner);</b>
+<b class="fc">&nbsp;        int newOccurrences = Math.max(0, currentOccurrences - rewardedOccurrences);</b>
+<b class="fc">&nbsp;        if (newOccurrences &gt; 0) {</b>
+<b class="fc">&nbsp;            owner.gainFood(newOccurrences * foodReward);</b>
+<b class="fc">&nbsp;            rewardedOccurrences = currentOccurrences;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private int countCurrentOccurrences(Player owner) {
+<b class="pc">&nbsp;        return switch (triggerType) {</b>
+<b class="fc">&nbsp;            case COMPLETE_SET -&gt; owner.getTribe().countCompleteCharacterSets();</b>
+<b class="fc">&nbsp;            case MATCHING_INVENTOR_PAIR -&gt; owner.getTribe().countInventorPairs();</b>
+&nbsp;        };
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public String getDescription() {
+<b class="fc">&nbsp;        return triggerType.name();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,409 @@
+@startuml 13-client-class-diagram
+' Class diagram: mesos.client + mesos.client.tui + mesos.client.gui + mesos.client.ui packages.
+' Updated 2026-06-07:
+'   — added mesos.client.gui package (GuiClient, GameSnapshot, PhaseController, GuiPhase)
+'   — added mesos.client.ui key panels (BoardPanel, PlayerPanel, StatusBar, ActionPanel,
+'       LobbyPanel, EndGamePanel, DisconnectPanel, CountPanel)
+'   — updated Transport.connect() signature (added askColor parameter)
+'   — updated Launcher to show it creates GuiClient
+' Updated 2026-06-22 (branch test, commit 20f25cf):
+'   — icon wiring: Resources gained icon(CharacterType) and buildingIcon(); TypeTokenBadge
+'       now resolves via Resources.icon() with fallback Resources.typeIcon(), BuildingBadge
+'       draws Resources.buildingIcon(); added mesos.client.ui.widget badges + TribeCountsBar
+'       (GridLayout(1,7) = 6 TypeTokenBadge + 1 BuildingBadge); the deleted Glyph widget is
+'       confirmed absent (it never appeared in this diagram)
+'   — drift fixed: moved Theme/Resources to mesos.client.ui.resource and GuiPhase/GameSnapshot/
+'       PhaseController to mesos.client.ui.model (were wrongly in mesos.client.gui); corrected
+'       Resources API, GuiClient/PhaseController/GameSnapshot members, panel constructors,
+'       DisconnectPanel.Mode values, and Launcher→GuiClient.start() relationship
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam interface {
+    BackgroundColor #E8F5E9
+    BorderColor #338833
+}
+skinparam enum {
+    BackgroundColor #FFF3CD
+    BorderColor #CC8800
+}
+skinparam note {
+    BackgroundColor #FFF3CD
+    BorderColor #FF9900
+}
+
+title MESOS — Class Diagram: client packages (TUI + GUI)
+
+' ─────────────────────────────────────────────
+' mesos.client — transport abstraction
+' ─────────────────────────────────────────────
+package "mesos.client" {
+
+    interface Transport {
+        + setOnMessage(Consumer<ServerMessage>)
+        + connect(host, port, nick,\n  Supplier<Integer> askNumPlayers,\n  Function<List<TotemColor>, TotemColor> askColor)
+        + send(ClientMessage)
+        + close()
+    }
+
+    class TcpTransport {
+        - out : ObjectOutputStream
+        - socket : Socket
+        - onMessage : Consumer<ServerMessage>
+        + setOnMessage(Consumer<ServerMessage>)
+        + connect(host, port, nick, askNumPlayers, askColor)
+        + send(ClientMessage)
+        + close()
+        - readHandshake(ObjectInputStream) : Object
+    }
+
+    class RmiTransport <<UnicastRemoteObject>> {
+        - service : RemoteGameService
+        - nick : String
+        - onMessage : Consumer<ServerMessage>
+        + setOnMessage(Consumer<ServerMessage>)
+        + connect(host, port, nick, askNumPlayers, askColor)
+        + send(ClientMessage)
+        + onServerMessage(ServerMessage)
+        + close()
+    }
+
+    interface RemoteGameCallback <<Remote>> {
+        + onServerMessage(ServerMessage)
+    }
+
+    class Launcher {
+        - {static} DEFAULT_TCP_PORT : int = 1234
+        - {static} DEFAULT_RMI_PORT : int = 1099
+        + {static} main(String[])
+        - {static} askGui(Scanner) : boolean
+        - {static} askRmi(Scanner) : boolean
+    }
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.tui — text UI
+' ─────────────────────────────────────────────
+package "mesos.client.tui" {
+
+    class TuiClient {
+        + {static} OUT_LOCK : Object
+        - {static} lastSnapshot : SnapshotMessage
+        + {static} main(String[])
+        + {static} start(Transport, host, port)
+    }
+
+    class BoardRenderer {
+        + {static} render(SnapshotMessage)
+        + {static} render(SnapshotMessage, nick)
+        + {static} render(SnapshotMessage, nick, done)
+    }
+
+    class AutoPlayer {
+        + {static} main(String[])
+    }
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.gui — Swing GUI client glue
+' ─────────────────────────────────────────────
+package "mesos.client.gui" {
+
+    class GuiClient {
+        - transport : Transport
+        - host : String
+        - port : int
+        - snapshot : GameSnapshot
+        - phaseController : PhaseController
+        - frame : JFrame
+        - cards : CardLayout
+        - rootCards : JPanel
+        - lobbyPanel : LobbyPanel
+        - countPanel : CountPanel
+        - endGamePanel : EndGamePanel
+        - disconnectPanel : DisconnectPanel
+        + {static} start(Transport, host, port)
+        + {static} main(String[])
+        - launch()
+        - buildCards()
+        - switchCardForPhase()
+        - handleServerMessage(ServerMessage)
+        - askNumPlayers() : Integer
+        - askColor(List<TotemColor>) : TotemColor
+    }
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.ui.model — client-side view state
+' ─────────────────────────────────────────────
+package "mesos.client.ui.model" {
+
+    class GameSnapshot {
+        - phase : Phase
+        - round : int
+        - era : String
+        - myNickname : String
+        - players : Map<String, PlayerState>
+        - topRow : List<CardInfo>
+        - bottomRow : List<CardInfo>
+        - tiles : Map<String, String>
+        + applySnapshot(SnapshotMessage)
+        + addListener(Runnable)
+        + setMyNickname(String)
+        + getPlayers() : Collection<PlayerState>
+        ' nested: enum Phase, PlayerState, TribeCard, CardInfo
+    }
+
+    class PhaseController {
+        - myNickname : String
+        - guiPhase : GuiPhase
+        - lastSnapshot : SnapshotMessage
+        - remainingPicks : PicksRemaining
+        + getGuiPhase() : GuiPhase
+        + getRemainingPicks() : PicksRemaining
+        + update(SnapshotMessage)
+        + isTileClickable(tileId) : boolean
+        + togglePick(top, index)
+        + setTakenColors(Set<String>)
+        + setLobbyPhase(GuiPhase)
+        + picksComplete() : boolean
+    }
+
+    enum GuiPhase {
+        LOBBY_PICKING_COLOR
+        LOBBY_WAITING_OTHERS
+        READY_TO_START
+        PLACEMENT_MINE
+        PLACEMENT_WAITING
+        ACTION_MINE
+        ACTION_EXTRA_PICK_MINE
+        ACTION_DONE_WAITING
+        FINAL_SCORING
+        GAME_OVER
+    }
+
+    class PicksRemaining <<record>> {
+        + top : int
+        + bottom : int
+        + isDone() : boolean
+        + total() : int
+    }
+
+    class TribeCounts {
+        + {static} of(List<TribeCard>) : TribeCounts
+        + characters(CharacterType) : int
+        + buildings() : int
+    }
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.ui.resource — theme + asset loading
+' ─────────────────────────────────────────────
+package "mesos.client.ui.resource" {
+
+    class Theme {
+        + {static} NIGHT_DEEP : Color
+        + {static} FLAME : Color
+        + {static} P_RED : Color
+        + {static} TITLE : Font
+        + {static} HEADING : Font
+        + {static} BODY : Font
+        + {static} scale(int) : int
+        ' ... (palette + fonts)
+    }
+
+    class Resources {
+        + {static} load(path) : BufferedImage
+        + {static} tile(tileId) : BufferedImage
+        + {static} turnOrder(playerCount) : BufferedImage
+        + {static} totem(colorName) : BufferedImage
+        + {static} totemForColor(Color) : BufferedImage
+        + {static} cardBack(era) : BufferedImage
+        + {static} cardFront(pageIndex) : BufferedImage
+        + {static} typeIcon(CharacterType) : BufferedImage
+        + {static} icon(CharacterType) : BufferedImage
+        + {static} buildingIcon() : BufferedImage
+    }
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.ui.panel — Swing panels (key classes)
+' ─────────────────────────────────────────────
+package "mesos.client.ui.panel" {
+
+    class BoardPanel {
+        - snapshot : GameSnapshot
+        - phase : PhaseController
+        + BoardPanel(GameSnapshot, PhaseController,\n  OfferTrackPanel.PlaceHandler)
+    }
+
+    class PlayerPanel {
+        - nickname : String
+        - snap : GameSnapshot
+        - phase : PhaseController
+        - countsBar : TribeCountsBar
+        + PlayerPanel(nickname, TotemBadge.Colour,\n  GameSnapshot, PhaseController)
+    }
+
+    class StatusBar {
+        - snap : GameSnapshot
+        - phase : PhaseController
+        + StatusBar(GameSnapshot, PhaseController)
+    }
+
+    class ActionPanel {
+        - phase : PhaseController
+        - verbSender : Consumer<String>
+        + ActionPanel(PhaseController, verbSender,\n  onSendStart, onSkipExtra, onQuit)
+    }
+
+    class LobbyPanel {
+        - phase : PhaseController
+        - sendColor : Consumer<String>
+        - sendStart : Runnable
+        + LobbyPanel(PhaseController,\n  Consumer<String> sendColor, Runnable sendStart)
+        + setRecoveryMode(current, total)
+    }
+
+    class EndGamePanel {
+        + EndGamePanel(GameSnapshot, Runnable onExit)
+        + setDbRanking(List<ScoreResult>)
+    }
+
+    class DisconnectPanel {
+        + DisconnectPanel(Mode, detail,\n  Runnable primary, Runnable secondary)
+        ' enum Mode { OTHER_DISCONNECTED, LOST_CONNECTION, SERVER_UNREACHABLE }
+    }
+
+    class CountPanel {
+        + CountPanel(IntConsumer onCount)
+    }
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.ui.widget — tribe-summary tokens (icon wiring)
+' ─────────────────────────────────────────────
+package "mesos.client.ui.widget" {
+
+    class TribeCountsBar {
+        - tokens : EnumMap<CharacterType, TypeTokenBadge>
+        - buildings : BuildingBadge
+        + update(GameSnapshot.PlayerState)
+    }
+
+    class TypeTokenBadge {
+        - type : CharacterType
+        - count : int
+        + setCount(int)
+        # paintComponent(Graphics)
+    }
+
+    class BuildingBadge {
+        - count : int
+        + setCount(int)
+        # paintComponent(Graphics)
+    }
+}
+
+' ─────────────────────────────────────────────
+' Relationships
+' ─────────────────────────────────────────────
+
+' Transport hierarchy
+Transport <|.. TcpTransport
+Transport <|.. RmiTransport
+RemoteGameCallback <|.. RmiTransport
+
+' Launcher creates both TUI and GUI clients
+Launcher ..> Transport : creates\nTcpTransport or RmiTransport
+Launcher ..> TuiClient : TuiClient.start(transport, ...)
+Launcher ..> GuiClient : GuiClient.start(transport, host, port)
+
+' TUI uses Transport + BoardRenderer
+TuiClient --> Transport : send() / setOnMessage()
+TuiClient ..> BoardRenderer : render(snapshot)
+
+' GuiClient owns snapshot, phaseController, transport
+GuiClient --> Transport : send() / setOnMessage()
+GuiClient --> GameSnapshot : owns
+GuiClient --> PhaseController : owns
+GuiClient ..> GuiPhase : switchCardForPhase()
+
+' PhaseController reads snapshot
+PhaseController --> GameSnapshot : reads
+PhaseController ..> GuiPhase : derives
+PhaseController ..> PicksRemaining : computes
+
+' Panels read snapshot + phaseController
+BoardPanel --> GameSnapshot : reads
+BoardPanel --> PhaseController : reads
+PlayerPanel --> GameSnapshot : reads
+PlayerPanel --> PhaseController : reads
+StatusBar --> GameSnapshot : reads
+StatusBar --> PhaseController : reads
+ActionPanel --> PhaseController : reads
+LobbyPanel --> PhaseController : reads
+
+' Tribe-summary tokens (icon wiring)
+PlayerPanel --> TribeCountsBar : owns
+TribeCountsBar --> TypeTokenBadge : 6 character tokens
+TribeCountsBar --> BuildingBadge : 1 building token
+TribeCountsBar ..> TribeCounts : counts per type
+TypeTokenBadge ..> Resources : icon() / typeIcon()
+BuildingBadge ..> Resources : buildingIcon()
+
+' GuiClient owns the panels (creates them)
+GuiClient ..> BoardPanel : creates
+GuiClient ..> PlayerPanel : creates
+GuiClient ..> StatusBar : creates
+GuiClient ..> ActionPanel : creates
+GuiClient ..> LobbyPanel : creates
+GuiClient ..> EndGamePanel : creates
+GuiClient ..> DisconnectPanel : creates
+GuiClient ..> CountPanel : creates
+
+note right of Transport
+    connect() performs the full lobby +
+    colour handshake synchronously before
+    starting the reader thread.
+    askNumPlayers: invoked only on LOBBY_FIRST.
+    askColor: invoked for all clients after lobby.
+end note
+
+note right of GuiClient
+    All ServerMessage dispatch goes through
+    SwingUtilities.invokeLater — the network
+    reader thread never touches Swing components.
+    switchCardForPhase() reads phaseController.getGuiPhase(),
+    sets countPanel.setVisible + rootCards.repaint()
+    to prevent ghost buttons.
+end note
+
+note right of GameSnapshot
+    Updated on every SnapshotMessage via
+    applySnapshot(). Registered Runnable listeners
+    are notified after each update; panels call
+    repaint() inside SwingUtilities.invokeLater.
+end note
+
+note bottom of TypeTokenBadge
+    Icon wiring (commit 20f25cf):
+    Resources.icon(type) → /img/icon/<type>.png,
+    falling back to Resources.typeIcon(type)
+    (corner crop from card art) then a drawn letter.
+    BuildingBadge draws Resources.buildingIcon()
+    (/img/icon/building.png), falling back to a hut.
+end note
+
+note bottom of AutoPlayer
+    Automated smoke-test client.
+    Connects, starts the game, and plays
+    all rounds without human input.
+end note
+
+@enduml

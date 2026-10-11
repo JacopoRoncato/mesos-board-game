@@ -1,0 +1,183 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > GamePersistence</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.server</a>
+</div>
+
+<h1>Coverage Summary for Class: GamePersistence (mesos.server)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">GamePersistence</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/13)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.server;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.io.ObjectInputStream;
+&nbsp;import java.io.ObjectOutputStream;
+&nbsp;import java.nio.file.Files;
+&nbsp;import java.nio.file.Path;
+&nbsp;import java.nio.file.StandardCopyOption;
+&nbsp;import java.util.Optional;
+&nbsp;import mesos.game.Game;
+&nbsp;
+&nbsp;/**
+&nbsp; * Handles crash-recovery persistence for the game state.
+&nbsp; * Saves the game to disk after each placement phase and deletes the file on normal game-over.
+&nbsp; * Uses an atomic write (write to {@code .tmp}, then rename) to avoid corrupt files on crash.
+&nbsp; */
+&nbsp;public class GamePersistence {
+&nbsp;    private final Path saveFile;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a persistence helper for the given save file path.
+&nbsp;     *
+&nbsp;     * @param saveFile path to the save file (created on first save)
+&nbsp;     */
+<b class="nc">&nbsp;    public GamePersistence(Path saveFile) {</b>
+<b class="nc">&nbsp;        this.saveFile = saveFile;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Atomically saves the game: writes to a {@code .tmp} file then renames.
+&nbsp;     * Avoids corrupt files if the JVM crashes during the write.
+&nbsp;     *
+&nbsp;     * @param game the game to persist
+&nbsp;     */
+&nbsp;    public void save(Game game) {
+<b class="nc">&nbsp;        Path tmp = saveFile.resolveSibling(saveFile.getFileName() + &quot;.tmp&quot;);</b>
+<b class="nc">&nbsp;        try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(tmp))) {</b>
+<b class="nc">&nbsp;            oos.writeObject(game);</b>
+<b class="nc">&nbsp;            Files.move(tmp, saveFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);</b>
+&nbsp;        } catch (IOException e) {
+<b class="nc">&nbsp;            System.err.println(&quot;[persistence] save failed: &quot; + e.getMessage());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Loads and returns the saved game, or an empty Optional if the file is missing or corrupt.
+&nbsp;     *
+&nbsp;     * @return the deserialized game, or {@code Optional.empty()}
+&nbsp;     */
+&nbsp;    public Optional&lt;Game&gt; load() {
+<b class="nc">&nbsp;        if (!Files.exists(saveFile)) return Optional.empty();</b>
+<b class="nc">&nbsp;        try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(saveFile))) {</b>
+<b class="nc">&nbsp;            return Optional.of((Game) ois.readObject());</b>
+&nbsp;        } catch (Exception e) {
+<b class="nc">&nbsp;            System.err.println(&quot;[persistence] save file unreadable, starting fresh: &quot; + e.getMessage());</b>
+<b class="nc">&nbsp;            return Optional.empty();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Deletes the save file.
+&nbsp;     * Called on normal game-over or when the recovery timeout expires.
+&nbsp;     */
+&nbsp;    public void delete() {
+<b class="nc">&nbsp;        try { Files.deleteIfExists(saveFile); } catch (IOException ignored) {}</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

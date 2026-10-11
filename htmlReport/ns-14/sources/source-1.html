@@ -1,0 +1,180 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TurnOrderSpace</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.order</a>
+</div>
+
+<h1>Coverage Summary for Class: TurnOrderSpace (mesos.order)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TurnOrderSpace</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (11/11)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.order;
+&nbsp;
+&nbsp;import java.io.Serializable;
+&nbsp;import mesos.player.Totem;
+&nbsp;
+&nbsp;/**
+&nbsp; * A single space on the {@link TurnOrderTile}. Holds a food bonus
+&nbsp; * and a flag indicating whether this is the last (penalty) space.
+&nbsp; */
+&nbsp;public class TurnOrderSpace implements Serializable {
+&nbsp;    private static final long serialVersionUID = 1L;
+&nbsp;    private final int position;
+&nbsp;    private final int foodBonus;
+&nbsp;    private final boolean lastSpace;
+&nbsp;    private Totem occupiedBy;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Creates a turn-order space.
+&nbsp;     *
+&nbsp;     * @param position  zero-based position on the tile (0 = first in turn order)
+&nbsp;     * @param foodBonus food granted when a totem is placed here (0 for no bonus)
+&nbsp;     * @param lastSpace {@code true} if this is the penalty space (last position)
+&nbsp;     */
+<b class="fc">&nbsp;    public TurnOrderSpace(int position, int foodBonus, boolean lastSpace) {</b>
+<b class="fc">&nbsp;        this.position = position;</b>
+<b class="fc">&nbsp;        this.foodBonus = foodBonus;</b>
+<b class="fc">&nbsp;        this.lastSpace = lastSpace;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns {@code true} if no totem is currently on this space. */
+&nbsp;    public boolean isFree() {
+<b class="fc">&nbsp;        return occupiedBy == null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Places the given totem on this space. */
+&nbsp;    public void assignTotem(Totem totem) {
+<b class="fc">&nbsp;        this.occupiedBy = totem;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Removes the totem from this space. */
+&nbsp;    public void clear() {
+<b class="fc">&nbsp;        this.occupiedBy = null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the zero-based position of this space on the tile. */
+&nbsp;    public int getPosition() {
+<b class="fc">&nbsp;        return position;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the food bonus granted when a totem is placed here. */
+&nbsp;    public int getFoodBonus() {
+<b class="fc">&nbsp;        return foodBonus;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns {@code true} if this is the last (penalty) space on the tile. */
+&nbsp;    public boolean isLastSpace() {
+<b class="fc">&nbsp;        return lastSpace;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Returns the totem currently on this space, or {@code null} if the space is free. */
+&nbsp;    public Totem getOccupiedBy() {
+<b class="fc">&nbsp;        return occupiedBy;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

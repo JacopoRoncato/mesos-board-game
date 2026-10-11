@@ -1,0 +1,412 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > GameSnapshot</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">mesos.client.ui.model</a>
+</div>
+
+<h1>Coverage Summary for Class: GameSnapshot (mesos.client.ui.model)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">GameSnapshot</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/28)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/70)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">GameSnapshot$CardInfo</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">GameSnapshot$Phase</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">GameSnapshot$PlayerState</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">GameSnapshot$TribeCard</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (1/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    3,8%
+  </span>
+  <span class="absValue">
+    (1/26)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    3,1%
+  </span>
+  <span class="absValue">
+    (1/32)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    4,7%
+  </span>
+  <span class="absValue">
+    (4/86)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package mesos.client.ui.model;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.Collection;
+&nbsp;import java.util.Collections;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.concurrent.CopyOnWriteArrayList;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;import mesos.client.ui.widget.CardComponent;
+&nbsp;import mesos.enums.CharacterType;
+&nbsp;import mesos.network.server.SnapshotMessage;
+&nbsp;
+&nbsp;/**
+&nbsp; * Client-side mirror of the server state. After the colleagues&#39; refactor the
+&nbsp; * server pushes a full {@link SnapshotMessage} on every model change, so this
+&nbsp; * class is now a plain projector of that DTO: no more line parsing.
+&nbsp; *
+&nbsp; * UI components subscribe via {@link #addListener(Runnable)} and receive
+&nbsp; * callbacks on the calling thread. {@link #applySnapshot(SnapshotMessage)}
+&nbsp; * must be called from the EDT for GUI clients.
+&nbsp; */
+<b class="nc">&nbsp;public class GameSnapshot {</b>
+&nbsp;
+<b class="nc">&nbsp;    public enum Phase {</b>
+<b class="nc">&nbsp;        SETUP, PLACEMENT, ACTION_RESOLUTION, END_OF_ROUND, FINAL_SCORING, GAME_OVER, UNKNOWN</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public static class PlayerState {
+&nbsp;        public final String id;
+<b class="nc">&nbsp;        public int food = 0;</b>
+<b class="nc">&nbsp;        public int prestige = 0;</b>
+<b class="nc">&nbsp;        public String selectedTile = &quot;-&quot;;</b>
+&nbsp;        /** TotemColor enum name as sent by the server (e.g. &quot;RED&quot;, &quot;BLUE&quot;, &quot;YELLOW&quot;). */
+<b class="nc">&nbsp;        public String totemColor = null;</b>
+&nbsp;        /** Acquired tribe cards (characters + buildings); public info in MESOS. Never null. */
+<b class="nc">&nbsp;        public List&lt;TribeCard&gt; tribe = Collections.emptyList();</b>
+&nbsp;
+<b class="nc">&nbsp;        public PlayerState(String id) { this.id = id; }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** One acquired card in a player&#39;s tribe. {@code type} is null for buildings. */
+&nbsp;    public static class TribeCard {
+&nbsp;        public final CardComponent.Kind kind;  // CHARACTER or BUILDING
+&nbsp;        public final String name;
+&nbsp;        public final CharacterType type;        // null for buildings
+<b class="fc">&nbsp;        public TribeCard(CardComponent.Kind kind, String name, CharacterType type) {</b>
+<b class="fc">&nbsp;            this.kind = kind;</b>
+<b class="pc">&nbsp;            this.name = name == null ? &quot;&quot; : name;</b>
+<b class="fc">&nbsp;            this.type = type;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /** One slot in a visible row. {@code kind == EMPTY} means no card. */
+&nbsp;    public static class CardInfo {
+&nbsp;        public final CardComponent.Kind kind;
+&nbsp;        public final String name;
+<b class="nc">&nbsp;        public CardInfo(CardComponent.Kind kind, String name) {</b>
+<b class="nc">&nbsp;            this.kind = kind;</b>
+<b class="nc">&nbsp;            this.name = name == null ? &quot;&quot; : name;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        public static final CardInfo EMPTY = new CardInfo(CardComponent.Kind.EMPTY, &quot;&quot;);</b>
+&nbsp;    }
+&nbsp;
+<b class="nc">&nbsp;    private Phase phase = Phase.UNKNOWN;</b>
+<b class="nc">&nbsp;    private int round = 0;</b>
+<b class="nc">&nbsp;    private String era = &quot;?&quot;;</b>
+<b class="nc">&nbsp;    private String myNickname = null;</b>
+<b class="nc">&nbsp;    private final Map&lt;String, PlayerState&gt; players = new LinkedHashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;    private List&lt;CardInfo&gt; topRow = Collections.emptyList();</b>
+<b class="nc">&nbsp;    private List&lt;CardInfo&gt; bottomRow = Collections.emptyList();</b>
+<b class="nc">&nbsp;    private final Map&lt;String, String&gt; tiles = new LinkedHashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;    private final CopyOnWriteArrayList&lt;Runnable&gt; listeners = new CopyOnWriteArrayList&lt;&gt;();</b>
+&nbsp;
+&nbsp;    // ── public read-only API ────────────────────────────────────────────────
+&nbsp;
+<b class="nc">&nbsp;    public Phase getPhase()      { return phase; }</b>
+<b class="nc">&nbsp;    public int getRound()        { return round; }</b>
+<b class="nc">&nbsp;    public String getEra()       { return era; }</b>
+<b class="nc">&nbsp;    public String getMyNickname(){ return myNickname; }</b>
+<b class="nc">&nbsp;    public PlayerState getPlayer(String id) { return players.get(id); }</b>
+<b class="nc">&nbsp;    public Collection&lt;PlayerState&gt; getPlayers() { return players.values(); }</b>
+&nbsp;
+&nbsp;    /** Returns the nicknames of all known players, preserving insertion order. */
+&nbsp;    public List&lt;String&gt; getPlayerNicks() {
+<b class="nc">&nbsp;        return players.values().stream()</b>
+<b class="nc">&nbsp;                .map(p -&gt; p.id)</b>
+<b class="nc">&nbsp;                .collect(Collectors.toList());</b>
+&nbsp;    }
+<b class="nc">&nbsp;    public List&lt;CardInfo&gt; getTopRow()    { return topRow; }</b>
+<b class="nc">&nbsp;    public List&lt;CardInfo&gt; getBottomRow() { return bottomRow; }</b>
+<b class="nc">&nbsp;    public Map&lt;String, String&gt; getTiles() { return tiles; }</b>
+&nbsp;
+&nbsp;    public PlayerState ensurePlayer(String id) {
+<b class="nc">&nbsp;        return players.computeIfAbsent(id, PlayerState::new);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void addListener(Runnable r) {
+<b class="nc">&nbsp;        if (r != null) listeners.add(r);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Called once after lobby completes so PlayerPanel/StatusBar know who I am. */
+&nbsp;    public void setMyNickname(String nick) {
+<b class="nc">&nbsp;        this.myNickname = nick;</b>
+<b class="nc">&nbsp;        fire();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /** Applies a server-pushed snapshot. EDT-required for GUI consumers. */
+&nbsp;    public void applySnapshot(SnapshotMessage snap) {
+<b class="nc">&nbsp;        if (snap == null) return;</b>
+&nbsp;
+<b class="nc">&nbsp;        this.phase = parsePhase(snap.getPhase());</b>
+<b class="nc">&nbsp;        this.round = snap.getRound();</b>
+<b class="nc">&nbsp;        this.era   = snap.getEra();</b>
+&nbsp;
+<b class="nc">&nbsp;        this.topRow    = mapRow(snap.getTopRow());</b>
+<b class="nc">&nbsp;        this.bottomRow = mapRow(snap.getBottomRow());</b>
+&nbsp;
+<b class="nc">&nbsp;        tiles.clear();</b>
+<b class="nc">&nbsp;        for (SnapshotMessage.TileSnapshot t : snap.getOfferTrack()) {</b>
+<b class="nc">&nbsp;            tiles.put(t.getTileId(), t.getOccupant());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Players: keep insertion order matching the server.
+<b class="nc">&nbsp;        Map&lt;String, PlayerState&gt; next = new LinkedHashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (SnapshotMessage.PlayerSnapshot p : snap.getPlayers()) {</b>
+<b class="nc">&nbsp;            PlayerState ps = players.getOrDefault(p.getId(), new PlayerState(p.getId()));</b>
+<b class="nc">&nbsp;            ps.food = p.getFood();</b>
+<b class="nc">&nbsp;            ps.prestige = p.getPrestigePoints();</b>
+<b class="nc">&nbsp;            ps.selectedTile = p.getSelectedTile();</b>
+<b class="nc">&nbsp;            ps.totemColor = p.getTotemColor();</b>
+<b class="nc">&nbsp;            ps.tribe = mapTribe(p.getTribe());</b>
+<b class="nc">&nbsp;            next.put(p.getId(), ps);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        players.clear();</b>
+<b class="nc">&nbsp;        players.putAll(next);</b>
+&nbsp;
+<b class="nc">&nbsp;        fire();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    // ── helpers ─────────────────────────────────────────────────────────────
+&nbsp;
+&nbsp;    private static List&lt;CardInfo&gt; mapRow(List&lt;SnapshotMessage.SlotSnapshot&gt; slots) {
+<b class="nc">&nbsp;        List&lt;CardInfo&gt; out = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (SnapshotMessage.SlotSnapshot s : slots) {</b>
+<b class="nc">&nbsp;            out.add(new CardInfo(kindFor(s.getKind()), s.getName()));</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return out;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static List&lt;TribeCard&gt; mapTribe(List&lt;SnapshotMessage.TribeCardRef&gt; refs) {
+<b class="nc">&nbsp;        if (refs == null || refs.isEmpty()) return Collections.emptyList();</b>
+<b class="nc">&nbsp;        List&lt;TribeCard&gt; out = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (SnapshotMessage.TribeCardRef r : refs) {</b>
+<b class="nc">&nbsp;            CharacterType type = null;</b>
+<b class="nc">&nbsp;            if (r.getType() != null) {</b>
+&nbsp;                // Unresolvable type cannot happen under matched serialVersionUID (client and
+&nbsp;                // server share the same CharacterType enum); type stays null only on a forged
+&nbsp;                // message, in which case the card is shown but not per-type counted.
+<b class="nc">&nbsp;                try { type = CharacterType.valueOf(r.getType()); }</b>
+&nbsp;                catch (IllegalArgumentException ignored) { }
+&nbsp;            }
+<b class="nc">&nbsp;            out.add(new TribeCard(kindFor(r.getKind()), r.getName(), type));</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return out;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private static CardComponent.Kind kindFor(String k) {
+<b class="nc">&nbsp;        if (k == null) return CardComponent.Kind.EMPTY;</b>
+<b class="nc">&nbsp;        return switch (k) {</b>
+<b class="nc">&nbsp;            case &quot;CHARACTER&quot;   -&gt; CardComponent.Kind.CHARACTER;</b>
+<b class="nc">&nbsp;            case &quot;BUILDING&quot;    -&gt; CardComponent.Kind.BUILDING;</b>
+<b class="nc">&nbsp;            case &quot;EVENT&quot;       -&gt; CardComponent.Kind.EVENT;</b>
+<b class="nc">&nbsp;            case &quot;FINAL_EVENT&quot; -&gt; CardComponent.Kind.BACK;</b>
+<b class="nc">&nbsp;            default            -&gt; CardComponent.Kind.EMPTY;</b>
+&nbsp;        };
+&nbsp;    }
+&nbsp;
+&nbsp;    private static Phase parsePhase(String s) {
+<b class="nc">&nbsp;        if (s == null) return Phase.UNKNOWN;</b>
+<b class="nc">&nbsp;        try { return Phase.valueOf(s); }</b>
+<b class="nc">&nbsp;        catch (IllegalArgumentException e) { return Phase.UNKNOWN; }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void fire() {
+<b class="nc">&nbsp;        for (Runnable r : listeners) r.run();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-06-23 10:37</div>
+</div>
+</body>
+</html>

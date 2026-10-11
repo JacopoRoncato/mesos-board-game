@@ -1,0 +1,657 @@
+@startuml 19-gui-class-diagram
+' Detailed class diagram: mesos.client.gui + mesos.client.ui packages.
+' Created 2026-06-07. Updated 2026-06-19: GuiPhase added PLACEMENT_MINE;
+' PhaseController corrected (getGuiPhase, update(SnapshotMessage), real fields/methods);
+' GameSnapshot corrected (applySnapshot, Phase enum, no offerChoices);
+' PlayerState.nick→id; CardInfo.kind type; PicksRemaining marked record.
+' Updated 2026-06-22: icon wiring — Resources gains icon(CharacterType)+buildingIcon();
+' TypeTokenBadge ..> Resources reflects icon()+typeIcon() fallback, BuildingBadge ..> Resources buildingIcon();
+' widget Glyph removed (deleted in code). Reconciled against real code: removed fake SwingPanel
+' base class (panels extend JPanel directly and read GameSnapshot+PhaseController);
+' Resources real API (load/tile/turnOrder/totem/totemForColor/totemTopForColor/cardBack/cardFront/
+' totemNameForColor/typeIcon/icon/buildingIcon — not getTile/getCard/getLogo/getDancers);
+' PlayerColors (forPosition/forId/fromServerColor/colorFromServerColor, no forNick);
+' CardArtManifest (pageForName/pageForCharacter/pagesForTypeEra, no pageFor);
+' GuiClient real fields/methods; CardComponent/RowPanel/OfferTileComponent/TotemBadge/
+' OfferTrackPanel/TurnOrderTilePanel/ActionPicksBar/ExtraPickBanner/Board/Player/EndGame/
+' Disconnect/Count panels corrected; added ResourceCounter + CardZoomOverlay widgets.
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam class {
+    BackgroundColor #FFFDE7
+    BorderColor #888855
+}
+skinparam interface {
+    BackgroundColor #E8F5E9
+    BorderColor #338833
+}
+skinparam enum {
+    BackgroundColor #FFF9C4
+    BorderColor #CC8800
+}
+skinparam note {
+    BackgroundColor #FFF3CD
+    BorderColor #FF9900
+}
+
+title MESOS — GUI Class Diagram (mesos.client.gui + mesos.client.ui)
+
+' ─────────────────────────────────────────────
+' External references (abbreviated)
+' ─────────────────────────────────────────────
+interface Transport <<mesos.client>> {
+    + send(ClientMessage)
+    + setOnMessage(Consumer<ServerMessage>)
+    + connect(...)
+    + close()
+}
+
+class SnapshotMessage <<mesos.network.server>> {
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.gui — logic / model layer
+' ─────────────────────────────────────────────
+package "mesos.client.gui" {
+
+    class GuiClient {
+        - transport : Transport
+        - host : String
+        - port : int
+        - snapshot : GameSnapshot
+        - phaseController : PhaseController
+        - frame : JFrame
+        - cards : CardLayout
+        - rootCards : JPanel
+        - lobbyPanel : LobbyPanel
+        - gamePanel : JPanel
+        - endGamePanel : EndGamePanel
+        - disconnectPanel : DisconnectPanel
+        - countPanel : CountPanel
+        - myNickname : String
+        - pendingRanking : List<ScoreResult>
+        --
+        + {static} start(transport : Transport, host : String, port : int)
+        + {static} main(args : String[])
+        - launch()
+        - buildCards()
+        - buildGamePanel() : JPanel
+        - switchCardForPhase()
+        - handleServerMessage(msg : ServerMessage)
+        - showDisconnect(mode, detail, primary, secondary)
+        - connect()
+        - askNumPlayers() : Integer
+        - askColor(available : List<TotemColor>) : TotemColor
+    }
+
+    class GameSnapshot {
+        - players : Map<String, PlayerState>
+        - topRow : List<CardInfo>
+        - bottomRow : List<CardInfo>
+        - tiles : Map<String, String>
+        - phase : Phase
+        - round : int
+        - era : String
+        - myNickname : String
+        - listeners : CopyOnWriteArrayList<Runnable>
+        --
+        + applySnapshot(snap : SnapshotMessage)
+        + addListener(r : Runnable)
+        + getPhase() : Phase
+        + getRound() : int
+        + getEra() : String
+        + getPlayer(id : String) : PlayerState
+        + getPlayers() : Collection<PlayerState>
+        + getPlayerNicks() : List<String>
+        + getTopRow() : List<CardInfo>
+        + getBottomRow() : List<CardInfo>
+        + getTiles() : Map<String, String>
+        + ensurePlayer(id : String) : PlayerState
+        + setMyNickname(nick : String)
+        + getMyNickname() : String
+    }
+
+    enum "GameSnapshot.Phase" as GSPhase {
+        SETUP
+        PLACEMENT
+        ACTION_RESOLUTION
+        END_OF_ROUND
+        FINAL_SCORING
+        GAME_OVER
+        UNKNOWN
+    }
+
+    class PhaseController {
+        - myNickname : String
+        - guiPhase : GuiPhase
+        - lastSnapshot : SnapshotMessage
+        - remainingPicks : PicksRemaining
+        - takenColors : Set<String>
+        - topBudget : int
+        - botBudget : int
+        - picks : List<String>
+        --
+        + PhaseController(myNickname : String)
+        + getMyNickname() : String
+        + getGuiPhase() : GuiPhase
+        + getRemainingPicks() : PicksRemaining
+        + getLastSnapshot() : SnapshotMessage
+        + getActivePlayerNickname() : String
+        + isTileClickable(tileId : String) : boolean
+        + update(snap : SnapshotMessage)
+        + addListener(r : Runnable)
+        + removeListener(r : Runnable)
+        + setTakenColors(Set<String>)
+        + takenColors() : Set<String>
+        + setLobbyPhase(GuiPhase)
+        + isActionPick() : boolean
+        + rowPickable(top : boolean) : boolean
+        + isPicked(top : boolean, index : int) : boolean
+        + togglePick(top : boolean, index : int)
+        + execArgs() : String
+        + totalPickBudget() : int
+        + picksComplete() : boolean
+    }
+
+    enum GuiPhase {
+        LOBBY_PICKING_COLOR
+        LOBBY_WAITING_OTHERS
+        READY_TO_START
+        PLACEMENT_MINE
+        PLACEMENT_WAITING
+        ACTION_MINE
+        ACTION_EXTRA_PICK_MINE
+        ACTION_DONE_WAITING
+        FINAL_SCORING
+        GAME_OVER
+        --
+        + isLobby() : boolean
+        + isPlaying() : boolean
+        + isMyTurn() : boolean
+    }
+
+    class PlayerState {
+        + id : String
+        + food : int
+        + prestige : int
+        + selectedTile : String
+        + totemColor : String
+        + tribe : List<TribeCard>
+    }
+
+    class CardInfo {
+        + kind : CardComponent.Kind
+        + name : String
+        + {static} EMPTY : CardInfo
+    }
+
+    class TribeCard {
+        + kind : CardComponent.Kind
+        + name : String
+        + type : CharacterType
+    }
+
+    class TribeCounts {
+        + {static} of(List<TribeCard>) : TribeCounts
+        + characters(CharacterType) : int
+        + buildings() : int
+        + totalCharacters() : int
+    }
+
+    class PicksRemaining <<record>> {
+        + top : int
+        + bottom : int
+        + isDone() : boolean
+        + total() : int
+        + decTop() : PicksRemaining
+        + decBottom() : PicksRemaining
+    }
+
+    class Theme {
+        + {static} NIGHT_DEEP : Color
+        + {static} NIGHT_MID : Color
+        + {static} CREAM : Color
+        + {static} CREAM_DIM : Color
+        + {static} FLAME : Color
+        + {static} FLAME_DEEP : Color
+        + {static} CORAL : Color
+        + {static} BRICK : Color
+        + {static} P_RED : Color
+        + {static} P_YELLOW : Color
+        + {static} P_CYAN : Color
+        + {static} P_PURPLE : Color
+        + {static} P_WHITE : Color
+        + {static} TITLE : Font
+        + {static} HEADING : Font
+        + {static} BODY : Font
+        + {static} SMALL : Font
+        + {static} scale(px : int) : int
+    }
+
+    class Resources {
+        - {static} CACHE : Map<String, BufferedImage>
+        --
+        + {static} load(path : String) : BufferedImage
+        + {static} tile(tileId : String) : BufferedImage
+        + {static} turnOrder(playerCount : int) : BufferedImage
+        + {static} totem(colorName : String) : BufferedImage
+        + {static} totemForColor(c : Color) : BufferedImage
+        + {static} totemTopForColor(c : Color) : BufferedImage
+        + {static} cardBack(era : String) : BufferedImage
+        + {static} cardBack() : BufferedImage
+        + {static} cardFront(pageIndex : int) : BufferedImage
+        + {static} totemNameForColor(c : Color) : String
+        + {static} icon(type : CharacterType) : BufferedImage
+        + {static} buildingIcon() : BufferedImage
+        + {static} typeIcon(type : CharacterType) : BufferedImage
+    }
+
+    class CardArtManifest {
+        + {static} pageForName(name : String) : int
+        + {static} pageForCharacter(typeKey, eraKey, copyIndex : int) : int
+        + {static} pagesForTypeEra(typeKey, eraKey) : List<Integer>
+    }
+
+    class PlayerColors {
+        + {static} forPosition(i : int) : Color
+        + {static} forId(playerId : String) : Color
+        + {static} fromServerColor(serverColor : String) : TotemBadge.Colour
+        + {static} colorFromServerColor(serverColor : String) : Color
+    }
+}
+
+' ─────────────────────────────────────────────
+' mesos.client.ui — Swing panels
+' ─────────────────────────────────────────────
+package "mesos.client.ui" {
+
+    class BoardPanel <<JPanel>> {
+        - snapshot : GameSnapshot
+        - phase : PhaseController
+        - topRow : RowPanel
+        - bottomRow : RowPanel
+        - offerTrack : OfferTrackPanel
+        - turnOrder : TurnOrderTilePanel
+        - eraBadge : JLabel
+        - {static} caveArt : BufferedImage
+        --
+        + BoardPanel(snapshot, phase, placeHandler)
+        + paintComponent(Graphics g)
+        - refresh()
+        - applyPickState(row : RowPanel, top : boolean)
+    }
+
+    class PlayerPanel <<JPanel>> {
+        - nickname : String
+        - colour : TotemBadge.Colour
+        - snap : GameSnapshot
+        - phase : PhaseController
+        - countsBar : TribeCountsBar
+        - expanded : boolean
+        + {static} TRIBE_EXPAND_ENABLED : boolean
+        --
+        + PlayerPanel(nickname, colour, snap, phase)
+        + setExpanded(exp : boolean)
+        + isExpanded() : boolean
+        - refresh()
+    }
+
+    class StatusBar <<JPanel>> {
+        - snap : GameSnapshot
+        - phase : PhaseController
+        --
+        + StatusBar(snap : GameSnapshot, phase : PhaseController)
+        + paintComponent(Graphics g)
+        - refresh()
+    }
+
+    class ActionPanel <<JPanel>> {
+        - phase : PhaseController
+        - verbSender : Consumer<String>
+        - primary : JButton
+        - skip : JButton
+        - quit : JButton
+        --
+        + ActionPanel(phase, verbSender, onSendStart, onSkipExtra, onQuit)
+        + paintComponent(Graphics g)
+        - refresh()
+        - onPrimary()
+    }
+
+    class LobbyPanel <<JPanel>> {
+        - phase : PhaseController
+        - sendColor : Consumer<String>
+        - sendStart : Runnable
+        - selected : TotemBadge.Colour
+        - confirm : JButton
+        - start : JButton
+        --
+        + LobbyPanel(phase, sendColor, sendStart)
+        + setRecoveryMode(current : int, total : int)
+        + paintComponent(Graphics g)
+        - refresh()
+    }
+
+    class EndGamePanel <<JPanel>> {
+        - snap : GameSnapshot
+        - onExit : Runnable
+        --
+        + EndGamePanel(snap : GameSnapshot, onExit : Runnable)
+        + setDbRanking(ranking : List<ScoreResult>)
+        + paintComponent(Graphics g)
+        - refresh()
+    }
+
+    class DisconnectPanel <<JPanel>> {
+        + DisconnectPanel(mode : Mode, detail : String, primary : Runnable, secondary : Runnable)
+        + paintComponent(Graphics g)
+    }
+
+    enum DisconnectMode {
+        OTHER_DISCONNECTED
+        LOST_CONNECTION
+        SERVER_UNREACHABLE
+    }
+
+    class CountPanel <<JPanel>> {
+        + CountPanel(onCount : IntConsumer)
+        + paintComponent(Graphics g)
+    }
+
+    class RowPanel <<JPanel>> {
+        - slots : List<CardComponent>
+        - slotRow : JPanel
+        --
+        + RowPanel(title : String, slotCount : int)
+        + setSlotCount(count : int)
+        + setOnSlotClick(cb : IntConsumer)
+        + slot(index : int) : CardComponent
+        + paintComponent(Graphics g)
+    }
+
+    class OfferTrackPanel <<JPanel>> {
+        - tiles : Map<String, OfferTileComponent>
+        - currentPlayerCount : int
+        --
+        + OfferTrackPanel(phase : PhaseController, handler : PlaceHandler)
+        + configureForPlayerCount(playerCount : int)
+        + setVisibleTiles(ids : Set<String>)
+        + setOccupant(tileId : String, color : Color)
+        + clearAllOccupants()
+        + paintComponent(Graphics g)
+    }
+
+    class CardComponent <<JComponent>> {
+        - kind : Kind
+        - label : String
+        - era : String
+        - pickable : boolean
+        - selected : boolean
+        --
+        + setKind(kind : Kind)
+        + setLabel(label : String)
+        + setEra(era : String)
+        + getKind() : Kind
+        + setPickable(p : boolean)
+        + isPickable() : boolean
+        + setSelected(s : boolean)
+        + paintComponent(Graphics g)
+    }
+
+    enum "CardComponent.Kind" as CCKind {
+        EMPTY
+        BACK
+        CHARACTER
+        BUILDING
+        EVENT
+    }
+
+    class OfferTileComponent <<JComponent>> {
+        - tileId : String
+        - phase : PhaseController
+        - tileImg : BufferedImage
+        - occupantColor : Color
+        --
+        + OfferTileComponent(tileId, phase, effectText, handler)
+        + setOccupantColor(c : Color)
+        + clearOccupant()
+        + paintComponent(Graphics g)
+    }
+
+    class TurnOrderTilePanel <<JComponent>> {
+        - spaces : List<Space>
+        - playerCount : int
+        - cave : BufferedImage
+        --
+        + TurnOrderTilePanel(playerCount : int)
+        + configure(newPlayerCount : int)
+        + clearOccupants()
+        + setOccupant(spaceIndex : int, color : Color)
+        + getPlayerCount() : int
+        + paintComponent(Graphics g)
+    }
+
+    class TotemBadge <<JComponent>> {
+        - colour : Colour
+        - targetSize : int
+        - dimmed : boolean
+        --
+        + TotemBadge(colour : Colour, targetSize : int)
+        + setDimmed(d : boolean)
+        + paintComponent(Graphics g)
+    }
+
+    enum "TotemBadge.Colour" as TBColour {
+        RED
+        YELLOW
+        CYAN
+        PURPLE
+        WHITE
+    }
+
+    class ActionPicksBar <<JPanel>> {
+        - phase : PhaseController
+        --
+        + ActionPicksBar(phase : PhaseController)
+        - refresh()
+    }
+
+    class ExtraPickBanner <<JPanel>> {
+        - phase : PhaseController
+        --
+        + ExtraPickBanner(phase : PhaseController, onSkip : Runnable)
+        - refresh()
+    }
+
+    class TribeCountsBar <<JPanel>> {
+        - tokens : EnumMap<CharacterType, TypeTokenBadge>
+        - buildings : BuildingBadge
+        --
+        + TribeCountsBar()
+        + update(player : PlayerState)
+    }
+
+    class TypeTokenBadge <<JComponent>> {
+        - type : CharacterType
+        - count : int
+        --
+        + TypeTokenBadge(type : CharacterType, count : int)
+        + setCount(n : int)
+        + paintComponent(Graphics g)
+    }
+
+    class BuildingBadge <<JComponent>> {
+        - count : int
+        --
+        + BuildingBadge(count : int)
+        + setCount(n : int)
+        + paintComponent(Graphics g)
+    }
+
+    class ResourceCounter <<JComponent>> {
+        - imagePath : String
+        - value : int
+        --
+        + ResourceCounter(imagePath : String, value : int)
+        + setValue(v : int)
+        + paintComponent(Graphics g)
+    }
+
+    class TribeCardsPanel <<JPanel>> {
+        + TribeCardsPanel(player : PlayerState)
+    }
+
+    class CardZoomOverlay <<JPanel>> {
+        + {static} show(source : Component, kind : CardComponent.Kind, label : String)
+        + paintComponent(Graphics g)
+    }
+}
+
+' ─────────────────────────────────────────────
+' Relationships — logic layer
+' ─────────────────────────────────────────────
+
+GuiClient --> Transport : send()\nsetOnMessage()
+GuiClient --> GameSnapshot : owns / updates
+GuiClient --> PhaseController : owns / queries
+GuiClient ..> GuiPhase : switches card on
+
+PhaseController --> SnapshotMessage : reads (via update/lastSnapshot)
+PhaseController ..> GuiPhase : derives
+PhaseController --> PicksRemaining : produces
+
+GameSnapshot +-- PlayerState
+GameSnapshot +-- CardInfo
+GameSnapshot +-- TribeCard
+GameSnapshot +-- GSPhase
+GameSnapshot --> SnapshotMessage : updated from (applySnapshot)
+TribeCounts ..> TribeCard : aggregates
+
+' ─────────────────────────────────────────────
+' Relationships — panels read logic layer
+' ─────────────────────────────────────────────
+
+BoardPanel --> GameSnapshot : reads
+BoardPanel --> PhaseController : reads
+StatusBar --> GameSnapshot : reads
+StatusBar --> PhaseController : reads
+PlayerPanel --> GameSnapshot : reads
+PlayerPanel --> PhaseController : reads
+ActionPanel --> PhaseController : reads
+LobbyPanel --> PhaseController : reads
+EndGamePanel --> GameSnapshot : reads
+
+BoardPanel *-- RowPanel
+BoardPanel *-- OfferTrackPanel
+BoardPanel *-- TurnOrderTilePanel
+
+RowPanel *-- CardComponent
+CardComponent +-- CCKind
+OfferTrackPanel *-- OfferTileComponent
+TotemBadge +-- TBColour
+PlayerColors ..> TotemBadge : returns Colour
+
+PlayerPanel ..> TotemBadge : uses
+PlayerPanel *-- ResourceCounter : food + PP
+PlayerPanel *-- TribeCountsBar : CORE (always)
+PlayerPanel ..> TribeCardsPanel : expands\n(removable, TRIBE_EXPAND_ENABLED)
+TribeCountsBar *-- TypeTokenBadge
+TribeCountsBar *-- BuildingBadge
+TribeCountsBar ..> TribeCounts : aggregates
+TribeCardsPanel *-- CardComponent
+TribeCardsPanel ..> CardZoomOverlay : opens on click
+CardZoomOverlay *-- CardComponent
+
+TypeTokenBadge ..> Resources : icon() then typeIcon() (crop fallback)
+BuildingBadge ..> Resources : buildingIcon()
+
+' GuiClient owns the card panels
+GuiClient *-- LobbyPanel
+GuiClient *-- EndGamePanel
+GuiClient *-- DisconnectPanel
+GuiClient *-- CountPanel
+GuiClient ..> BoardPanel : builds game card
+GuiClient ..> StatusBar : builds game card
+GuiClient ..> ActionPanel : builds game card
+GuiClient ..> ActionPicksBar : builds game card
+GuiClient ..> ExtraPickBanner : builds game card
+GuiClient ..> PlayerPanel : one per player
+
+DisconnectPanel +-- DisconnectMode
+
+' Utilities
+CardComponent ..> Resources : loads card image
+CardComponent ..> CardArtManifest : page lookup
+OfferTileComponent ..> Resources : loads tile + totem image
+TurnOrderTilePanel ..> Resources : loads cave + totem-top
+ResourceCounter ..> Theme : background + fonts
+ActionPanel ..> Theme : uses colours/fonts
+StatusBar ..> Theme : uses colours/fonts
+LobbyPanel ..> Theme : uses colours/fonts
+
+' ─────────────────────────────────────────────
+' Notes
+' ─────────────────────────────────────────────
+
+note right of GuiClient
+  EDT invariant:
+  ALL Swing mutations go through
+  SwingUtilities.invokeLater().
+  Network reader thread NEVER
+  touches panels directly.
+
+  switchCardForPhase():
+  countPanel.setVisible(false) +
+  rootCards.repaint() to prevent
+  ghost buttons on partial repaints.
+end note
+
+note right of GameSnapshot
+  Updated on every SnapshotMessage.
+  Notifies all registered Runnable
+  listeners after each update.
+  Panels call repaint() inside
+  SwingUtilities.invokeLater().
+end note
+
+note right of PhaseController
+  Derives GuiPhase by comparing
+  snap.phase + snap fields with the
+  local nickname (PLACEMENT_MINE vs
+  PLACEMENT_WAITING, ACTION_MINE vs
+  ACTION_DONE_WAITING, etc.).
+  Ten states map 1:1 to UI modes
+  in ActionPanel + StatusBar.
+end note
+
+note bottom of BoardPanel
+  paintComponent draws:
+  1. gradient background
+  2. cave-art full-bleed wash
+     (alpha 0.5, Math.max scale)
+     — avoids "cut in half" artefact
+  3. child panels (rows, offer, turnorder)
+end note
+
+note bottom of LobbyPanel
+  setOpaque(true): gradient fill
+  covers full panel bounds. Without
+  this, Swing partial repaints leave
+  CountPanel "2"/"5" buttons visible
+  in totem-card gaps.
+end note
+
+note right of TypeTokenBadge
+  Icon resolution (2026-06-22):
+  Resources.icon(type) — /img/icon/<type>.png —
+  then Resources.typeIcon(type) (corner crop
+  from card art), then a drawn letter glyph.
+  BuildingBadge: Resources.buildingIcon()
+  (/img/icon/building.png) → procedural hut.
+  TribeCountsBar = GridLayout(1,7):
+  6 TypeTokenBadge + 1 BuildingBadge.
+end note
+
+@enduml
