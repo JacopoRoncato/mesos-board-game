@@ -2,6 +2,7 @@
 
 Java implementation of the board game **MESOS** (Yaniv Kahana & Simone Luciani, Cranio Creations), built for the *Ingegneria del Software* course at Politecnico di Milano (A.A. 2025/2026).
 
+Project degree: **30**
 Group: **Jacopo Roncato, Amjed Taha, Marco Ruggieri**
 
 ---
